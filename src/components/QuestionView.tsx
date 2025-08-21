@@ -12,6 +12,7 @@ interface QuestionViewProps {
 
 export default function QuestionView({ data }: QuestionViewProps) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [loopMessage, setLoopMessage] = useState<string | null>(null);
 
     if (!data.questions.length) {
         return (
@@ -25,16 +26,25 @@ export default function QuestionView({ data }: QuestionViewProps) {
     const isFirst = currentQuestionIndex === 0;
     const isLast = currentQuestionIndex === data.questions.length - 1;
 
+    const showLoopMessage = (message: string) => {
+        setLoopMessage(message);
+        setTimeout(() => setLoopMessage(null), 2000);
+    };
+
     const nextQuestion = () => {
-        if (currentQuestionIndex < data.questions.length - 1) {
-            setCurrentQuestionIndex(prev => prev + 1);
+        const nextIndex = (currentQuestionIndex + 1) % data.questions.length;
+        if (currentQuestionIndex === data.questions.length - 1) {
+            showLoopMessage('最後から最初の問題に戻りました');
         }
+        setCurrentQuestionIndex(nextIndex);
     };
 
     const prevQuestion = () => {
-        if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
+        const prevIndex = (currentQuestionIndex - 1 + data.questions.length) % data.questions.length;
+        if (currentQuestionIndex === 0) {
+            showLoopMessage('最初から最後の問題に移動しました');
         }
+        setCurrentQuestionIndex(prevIndex);
     };
 
     // 回答内容をレンダリングする関数（ResponsePreviewと同様）
@@ -78,6 +88,13 @@ export default function QuestionView({ data }: QuestionViewProps) {
         <div className="w-full max-w-7xl mx-auto p-4">
             {/* 問題ナビゲーション */}
             <div className="sticky top-0 bg-white border rounded-lg shadow-sm p-4 mb-6 z-10">
+                {/* ループメッセージ */}
+                {loopMessage && (
+                    <div className="mb-3 p-2 bg-yellow-100 border border-yellow-300 rounded-md text-yellow-800 text-sm text-center">
+                        {loopMessage}
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="text-xl font-bold text-gray-800">
@@ -99,17 +116,19 @@ export default function QuestionView({ data }: QuestionViewProps) {
                     <div className="flex gap-3">
                         <button
                             onClick={prevQuestion}
-                            disabled={isFirst}
+                            disabled={data.questions.length <= 1}
                             className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                            title={isFirst ? '最後の問題に移動' : '前の問題に移動'}
                         >
-                            ← 前の問題
+                            {isFirst ? '← 末尾へ' : '← 前の問題'}
                         </button>
                         <button
                             onClick={nextQuestion}
-                            disabled={isLast}
+                            disabled={data.questions.length <= 1}
                             className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                            title={isLast ? '最初の問題に移動' : '次の問題に移動'}
                         >
-                            次の問題 →
+                            {isLast ? '最初へ →' : '次の問題 →'}
                         </button>
                     </div>
                 </div>
