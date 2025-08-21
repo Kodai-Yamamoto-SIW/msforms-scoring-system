@@ -10,6 +10,7 @@ interface ResponsePreviewProps {
 export default function ResponsePreview({ data }: ResponsePreviewProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showBasicInfo, setShowBasicInfo] = useState(false);
+    const [loopMessage, setLoopMessage] = useState<string | null>(null);
 
     if (!data.responses.length) {
         return (
@@ -20,13 +21,28 @@ export default function ResponsePreview({ data }: ResponsePreviewProps) {
     }
 
     const currentResponse = data.responses[currentIndex];
+    const isFirst = currentIndex === 0;
+    const isLast = currentIndex === data.responses.length - 1;
+
+    const showLoopMessage = (message: string) => {
+        setLoopMessage(message);
+        setTimeout(() => setLoopMessage(null), 2000);
+    };
 
     const nextResponse = () => {
-        setCurrentIndex((prev) => (prev + 1) % data.responses.length);
+        const nextIndex = (currentIndex + 1) % data.responses.length;
+        if (currentIndex === data.responses.length - 1) {
+            showLoopMessage('最後から最初の回答者に戻りました');
+        }
+        setCurrentIndex(nextIndex);
     };
 
     const prevResponse = () => {
-        setCurrentIndex((prev) => (prev - 1 + data.responses.length) % data.responses.length);
+        const prevIndex = (currentIndex - 1 + data.responses.length) % data.responses.length;
+        if (currentIndex === 0) {
+            showLoopMessage('最初から最後の回答者に移動しました');
+        }
+        setCurrentIndex(prevIndex);
     };
 
     const formatDateTime = (dateStr: string) => {
@@ -77,13 +93,29 @@ export default function ResponsePreview({ data }: ResponsePreviewProps) {
         <div className="w-full max-w-6xl mx-auto p-4">
             {/* 回答者ナビゲーション - コンパクトで目立つ */}
             <div className="sticky top-0 bg-white border rounded-lg shadow-sm p-4 mb-6 z-10">
+                {/* ループメッセージ */}
+                {loopMessage && (
+                    <div className="mb-3 p-2 bg-yellow-100 border border-yellow-300 rounded-md text-yellow-800 text-sm text-center">
+                        {loopMessage}
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="text-xl font-bold text-gray-800">
                             {currentResponse.名前}
                         </div>
-                        <div className="text-sm text-gray-500">
-                            {currentIndex + 1} / {data.totalResponses}
+                        <div className="flex items-center gap-3">
+                            <div className="text-sm text-gray-500">
+                                {currentIndex + 1} / {data.totalResponses}
+                            </div>
+                            {/* プログレスバー */}
+                            <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-blue-600 transition-all duration-300 ease-out"
+                                    style={{ width: `${((currentIndex + 1) / data.totalResponses) * 100}%` }}
+                                ></div>
+                            </div>
                         </div>
                         <button
                             onClick={() => setShowBasicInfo(!showBasicInfo)}
@@ -97,15 +129,17 @@ export default function ResponsePreview({ data }: ResponsePreviewProps) {
                             onClick={prevResponse}
                             disabled={data.responses.length <= 1}
                             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                            title={isFirst ? '最後の回答者に移動' : '前の回答者に移動'}
                         >
-                            ← 前
+                            {isFirst ? '← 末尾へ' : '← 前'}
                         </button>
                         <button
                             onClick={nextResponse}
                             disabled={data.responses.length <= 1}
                             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                            title={isLast ? '最初の回答者に移動' : '次の回答者に移動'}
                         >
-                            次 →
+                            {isLast ? '最初へ →' : '次 →'}
                         </button>
                     </div>
                 </div>
