@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Microsoft Forms 採点システム
 
-## Getting Started
+Microsoft Formsから出力されたExcelファイルを読み込み、回答をプレビューして採点を行うWebアプリケーションです。
 
-First, run the development server:
+## 機能
 
+### 現在実装済み
+- ✅ Microsoft Forms Excelファイルのアップロード機能
+- ✅ 回答データの解析とプレビュー機能
+- ✅ 一人ずつの回答表示（前へ/次へナビゲーション）
+- ✅ 基本情報（ID、名前、メール、時刻）の表示
+- ✅ 問題と回答の対応表示
+
+### 今後実装予定
+- 採点基準の設定機能
+- 二択評価インターフェース（基準を満たす/満たさない）
+- 点数計算機能
+- 採点結果のエクスポート機能
+
+## 技術スタック
+
+- **フレームワーク**: Next.js 15 (App Router)
+- **言語**: TypeScript
+- **スタイリング**: Tailwind CSS
+- **Excel処理**: xlsx
+- **ファイルアップロード**: react-dropzone
+- **リンティング**: ESLint
+
+## セットアップ
+
+1. 依存関係のインストール：
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. 開発サーバーの起動：
+```bash
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. ブラウザで http://localhost:3000 にアクセス
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 使用方法
 
-## Learn More
+1. Microsoft Formsから出力されたExcel (.xlsx) ファイルをドラッグ&ドロップまたはクリックしてアップロード
+2. 回答データが自動で解析され、プレビュー画面が表示されます
+3. 「前へ」「次へ」ボタンで回答者を切り替えて内容を確認できます
 
-To learn more about Next.js, take a look at the following resources:
+## Excelファイル形式
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+対応するExcelファイルの形式：
+- 1行目：ヘッダー（ID, 開始時刻, 完了時刻, メール, 名前, 問題文1, 問題文2, ...）
+- 2行目以降：回答データ
+- ID列が空になるまでがデータ範囲
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 開発
 
-## Deploy on Vercel
+```bash
+# 開発サーバー起動
+npm run dev
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# ビルド
+npm run build
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# リント実行
+npm run lint
+```
