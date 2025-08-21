@@ -12,6 +12,7 @@ export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: Wo
     const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         loadWorkspaces();
@@ -56,6 +57,18 @@ export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: Wo
             console.error('ワークスペース削除エラー:', error);
             setError('ワークスペースの削除に失敗しました');
         }
+    };
+
+    const toggleWorkspaceDetails = (workspaceId: string) => {
+        setExpandedWorkspaces(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(workspaceId)) {
+                newSet.delete(workspaceId);
+            } else {
+                newSet.add(workspaceId);
+            }
+            return newSet;
+        });
     };
 
     if (loading) {
@@ -111,26 +124,33 @@ export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: Wo
                             >
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
+                                        <div className="flex items-center gap-2 mb-2">
                                             <h3 className="text-lg font-medium text-gray-900">
                                                 {workspace.name}
                                             </h3>
-                                            <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                                {workspace.fileName}
-                                            </span>
+                                            <button
+                                                onClick={() => toggleWorkspaceDetails(workspace.id)}
+                                                className="text-gray-400 hover:text-gray-600 text-sm"
+                                                title="詳細を表示/非表示"
+                                            >
+                                                {expandedWorkspaces.has(workspace.id) ? '▼' : '▶'}
+                                            </button>
                                         </div>
                                         {workspace.description && (
                                             <p className="text-gray-600 mb-2">
                                                 {workspace.description}
                                             </p>
                                         )}
-                                        <div className="text-sm text-gray-500">
-                                            <span>回答者: {workspace.totalResponses}名</span>
-                                            <span className="mx-2">•</span>
-                                            <span>問題: {workspace.totalQuestions}問</span>
-                                            <span className="mx-2">•</span>
-                                            <span>作成日: {new Date(workspace.createdAt).toLocaleDateString('ja-JP')}</span>
-                                        </div>
+                                        {expandedWorkspaces.has(workspace.id) && (
+                                            <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded mt-2">
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <span>📊 回答者: {workspace.totalResponses}名</span>
+                                                    <span>📝 問題: {workspace.totalQuestions}問</span>
+                                                    <span>📅 作成日: {new Date(workspace.createdAt).toLocaleDateString('ja-JP')}</span>
+                                                    <span className="text-gray-400">📁 ファイル: {workspace.fileName}</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex gap-2 ml-4">
                                         <button
