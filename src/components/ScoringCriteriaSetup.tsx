@@ -114,18 +114,61 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
         return questionCriteria.criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0);
     };
 
+    // 全問題の合計点を計算
+    const getGrandTotalScore = (): number => {
+        return criteriaList.reduce((total, questionCriteria) => {
+            return total + getTotalMaxScore(questionCriteria);
+        }, 0);
+    };
+
     return (
         <div className="max-w-6xl mx-auto p-6">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    採点基準の設定
-                </h1>
-                <p className="text-gray-600">
-                    ワークスペース: {workspace.name}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">
-                    各問題に対して採点基準を設定してください。基準ごとに説明と配点を入力します。
-                </p>
+            {/* 固定ヘッダー - 全体合計点表示 */}
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 mb-6 pb-4">
+                <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                            採点基準の設定
+                        </h1>
+                        <p className="text-gray-600">
+                            ワークスペース: {workspace.name}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-2">
+                            各問題に対して採点基準を設定してください。基準ごとに説明と配点を入力します。
+                        </p>
+                    </div>
+                    <div className="flex items-start gap-4">
+                        {/* 全体合計点表示 */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="text-sm text-blue-600 font-medium">全体合計点</div>
+                            <div className="text-2xl font-bold text-blue-800">{getGrandTotalScore()}点</div>
+                        </div>
+                        {/* 操作ボタン */}
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <div className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full inline-block mr-1"></div>
+                                        保存中
+                                    </>
+                                ) : (
+                                    '保存'
+                                )}
+                            </button>
+                            <button
+                                onClick={onCancel}
+                                disabled={isSaving}
+                                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+                            >
+                                キャンセル
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="space-y-8">
@@ -194,30 +237,6 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                         </div>
                     </div>
                 ))}
-            </div>
-
-            <div className="flex gap-4 mt-8">
-                <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
-                >
-                    {isSaving ? (
-                        <>
-                            <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block mr-2"></div>
-                            保存中...
-                        </>
-                    ) : (
-                        '採点基準を保存'
-                    )}
-                </button>
-                <button
-                    onClick={onCancel}
-                    disabled={isSaving}
-                    className="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                >
-                    キャンセル
-                </button>
             </div>
         </div>
     );
