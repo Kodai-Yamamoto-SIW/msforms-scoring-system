@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ParsedFormsData } from '@/types/forms';
+import { isCodeContent, detectLanguage } from '@/utils/codeDetection';
 
 interface ResponsePreviewProps {
     data: ParsedFormsData;
@@ -43,6 +46,45 @@ export default function ResponsePreview({ data }: ResponsePreviewProps) {
             showLoopMessage('最初から最後の回答者に移動しました');
         }
         setCurrentIndex(prevIndex);
+    };
+
+    // 回答内容をレンダリングする関数
+    const renderAnswerContent = (content: string) => {
+        if (!content) {
+            return <span className="text-gray-400 italic">（回答なし）</span>;
+        }
+
+        if (isCodeContent(content)) {
+            const language = detectLanguage(content);
+            return (
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                            {language === 'text' ? 'コード' : language.toUpperCase()}
+                        </span>
+                    </div>
+                    <SyntaxHighlighter
+                        language={language === 'text' ? 'javascript' : language}
+                        style={vscDarkPlus}
+                        customStyle={{
+                            margin: 0,
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            lineHeight: '1.5'
+                        }}
+                        wrapLongLines={true}
+                    >
+                        {content}
+                    </SyntaxHighlighter>
+                </div>
+            );
+        }
+
+        return (
+            <div className="text-gray-800 text-base leading-relaxed whitespace-pre-wrap">
+                {content}
+            </div>
+        );
     };
 
     const formatDateTime = (dateStr: string) => {
@@ -180,11 +222,7 @@ export default function ResponsePreview({ data }: ResponsePreviewProps) {
                             </div>
                         </div>
                         <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
-                            <div className="text-gray-800 text-base leading-relaxed whitespace-pre-wrap">
-                                {currentResponse[question] || (
-                                    <span className="text-gray-400 italic">（回答なし）</span>
-                                )}
-                            </div>
+                            {renderAnswerContent(String(currentResponse[question] || ''))}
                         </div>
                     </div>
                 ))}
