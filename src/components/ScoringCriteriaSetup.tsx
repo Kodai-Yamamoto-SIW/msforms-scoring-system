@@ -122,54 +122,62 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
     };
 
     return (
-        <div className="max-w-6xl mx-auto p-6">
-            {/* 固定ヘッダー - 全体合計点表示 */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 mb-6 pb-4">
-                <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                            採点基準の設定
-                        </h1>
-                        <p className="text-gray-600">
-                            ワークスペース: {workspace.name}
-                        </p>
-                        <p className="text-sm text-gray-500 mt-2">
-                            各問題に対して採点基準を設定してください。基準ごとに説明と配点を入力します。
-                        </p>
-                    </div>
-                    <div className="flex items-start gap-4">
-                        {/* 全体合計点表示 */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <div className="text-sm text-blue-600 font-medium">全体合計点</div>
-                            <div className="text-2xl font-bold text-blue-800">{getGrandTotalScore()}点</div>
+        <div className="max-w-6xl mx-auto">
+            {/* 固定ヘッダー - 改善されたデザイン */}
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 mb-6">
+                <div className="px-6 py-4">
+                    <div className="flex justify-between items-center">
+                        {/* 左側: タイトルとワークスペース名 */}
+                        <div className="flex-1">
+                            <div className="flex items-baseline gap-4">
+                                <h1 className="text-2xl font-bold text-gray-900">
+                                    採点基準の設定
+                                </h1>
+                                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                    {workspace.name}
+                                </span>
+                            </div>
                         </div>
-                        {/* 操作ボタン */}
-                        <div className="flex flex-col gap-2">
-                            <button
-                                onClick={handleSave}
-                                disabled={isSaving}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium text-sm"
-                            >
-                                {isSaving ? (
-                                    <>
-                                        <div className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full inline-block mr-1"></div>
-                                        保存中
-                                    </>
-                                ) : (
-                                    '保存'
-                                )}
-                            </button>
-                            <button
-                                onClick={onCancel}
-                                disabled={isSaving}
-                                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
-                            >
-                                キャンセル
-                            </button>
+                        
+                        {/* 右側: 合計点と操作ボタン */}
+                        <div className="flex items-center gap-6">
+                            {/* 全体合計点表示 - よりコンパクトに */}
+                            <div className="text-right">
+                                <div className="text-xs text-gray-500 uppercase tracking-wide">総配点</div>
+                                <div className="text-xl font-bold text-indigo-600">{getGrandTotalScore()}<span className="text-sm text-gray-500 ml-1">点</span></div>
+                            </div>
+                            
+                            {/* 操作ボタン - 横並びに */}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={onCancel}
+                                    disabled={isSaving}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    キャンセル
+                                </button>
+                                <button
+                                    onClick={handleSave}
+                                    disabled={isSaving}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <div className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full inline-block mr-2"></div>
+                                            保存中
+                                        </>
+                                    ) : (
+                                        '保存'
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* メインコンテンツ */}
+            <div className="px-6">
 
             <div className="space-y-8">
                 {criteriaList.map((questionCriteria) => (
@@ -237,6 +245,7 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                         </div>
                     </div>
                 ))}
+            </div>
             </div>
         </div>
     );
