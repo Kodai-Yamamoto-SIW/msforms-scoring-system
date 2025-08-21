@@ -1,7 +1,7 @@
 // サーバーサイドデータストレージ（ファイルベース）
 import fs from 'fs';
 import path from 'path';
-import { ScoringWorkspace, WorkspaceSummary, CreateWorkspaceRequest, ParsedFormsData, FormsResponse } from '@/types/forms';
+import { ScoringWorkspace, WorkspaceSummary, CreateWorkspaceRequest, ParsedFormsData, FormsResponse, QuestionScoringCriteria } from '@/types/forms';
 import { validateDataCompatibility, detectDataDifferences } from '@/utils/dataValidation';
 
 const DATA_DIR = path.join(process.cwd(), 'data', 'workspaces');
@@ -261,6 +261,38 @@ export const reimportWorkspaceData = async (
     } catch (error) {
         console.error(`ワークスペース ${id} のデータ再インポートに失敗:`, error);
         return { success: false, error: 'データの再インポートに失敗しました' };
+    }
+};
+
+// ワークスペースの採点基準を更新
+export const updateScoringCriteria = async (id: string, criteria: QuestionScoringCriteria[]): Promise<ScoringWorkspace | null> => {
+    ensureDataDir();
+
+    try {
+        console.log('採点基準更新開始:', id);
+
+        // 既存のワークスペースを取得
+        const existingWorkspace = await getWorkspace(id);
+        if (!existingWorkspace) {
+            return null;
+        }
+
+        // 更新されたワークスペースを作成
+        const updatedWorkspace: ScoringWorkspace = {
+            ...existingWorkspace,
+            scoringCriteria: criteria,
+            updatedAt: new Date().toISOString(),
+        };
+
+        // ファイルに保存
+        const filePath = path.join(DATA_DIR, `${id}.json`);
+        await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
+        console.log('採点基準更新完了:', id);
+
+        return updatedWorkspace;
+    } catch (error) {
+        console.error(`ワークスペース ${id} の採点基準更新に失敗:`, error);
+        return null;
     }
 };
 

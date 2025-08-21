@@ -5,15 +5,18 @@ import FileUpload from '@/components/FileUpload';
 import ResponsePreview from '@/components/ResponsePreview';
 import QuestionView from '@/components/QuestionView';
 import WorkspaceSelector from '@/components/WorkspaceSelector';
-import { ParsedFormsData, ScoringWorkspace } from '@/types/forms';
+import ScoringCriteriaSetup from '@/components/ScoringCriteriaSetup';
+import { ParsedFormsData, ScoringWorkspace, QuestionScoringCriteria } from '@/types/forms';
 
 type ViewMode = 'question' | 'person';
+type AppMode = 'workspaceList' | 'main' | 'scoringCriteria';
 
 export default function Home() {
   const [formsData, setFormsData] = useState<ParsedFormsData | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('question'); // デフォルトは問題ごと表示
   const [currentWorkspace, setCurrentWorkspace] = useState<ScoringWorkspace | null>(null);
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [appMode, setAppMode] = useState<AppMode>('workspaceList');
 
   const handleWorkspaceCreated = (workspaceId: string) => {
     // ワークスペース作成後、そのワークスペースを開く
@@ -33,6 +36,7 @@ export default function Home() {
         setCurrentWorkspace(result.workspace);
         setFormsData(result.workspace.formsData);
         setShowFileUpload(false);
+        setAppMode('main');
       } else {
         console.error('ワークスペースの読み込みに失敗しました:', result.error);
       }
@@ -43,21 +47,92 @@ export default function Home() {
 
   const handleCreateNew = () => {
     setShowFileUpload(true);
+    setAppMode('main');
+  };
+
+  const handleScoringCriteria = async (workspaceId: string) => {
+    console.log('採点基準ボタンがクリックされました:', workspaceId);
+    try {
+      const response = await fetch(`/api/workspaces/${workspaceId}`);
+      const result = await response.json();
+      console.log('API応答:', result);
+
+      if (result.success) {
+        console.log('ワークスペース設定中:', result.workspace);
+        setCurrentWorkspace(result.workspace);
+        console.log('appModeを scoringCriteria に変更');
+        setAppMode('scoringCriteria');
+      } else {
+        alert('ワークスペースの読み込みに失敗しました');
+      }
+    } catch (error) {
+      console.error('ワークスペース読み込みエラー:', error);
+      alert('ワークスペースの読み込みに失敗しました');
+    }
+  };
+
+  const handleSaveScoringCriteria = async (criteria: QuestionScoringCriteria[]) => {
+    if (!currentWorkspace) return;
+
+    try {
+      const response = await fetch(`/api/workspaces/${currentWorkspace.id}/scoring-criteria`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ criteria }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setCurrentWorkspace(result.workspace);
+        setAppMode('main');
+        alert('採点基準を保存しました');
+      } else {
+        alert('採点基準の保存に失敗しました');
+      }
+    } catch (error) {
+      console.error('採点基準保存エラー:', error);
+      alert('採点基準の保存に失敗しました');
+    }
+  };
+
+  const handleCancelScoringCriteria = () => {
+    setAppMode('main');
   };
 
   const handleReset = () => {
     setFormsData(null);
     setCurrentWorkspace(null);
     setShowFileUpload(false);
+    setAppMode('workspaceList');
   };
+
+  // 採点基準設定画面
+  if (appMode === 'scoringCriteria' && currentWorkspace) {
+    console.log('採点基準設定画面を表示:', appMode, currentWorkspace?.name);
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
+          <ScoringCriteriaSetup
+            workspace={currentWorkspace}
+            onSave={handleSaveScoringCriteria}
+            onCancel={handleCancelScoringCriteria}
+          />
+        </div>
+      </div>
+    );
+  }
 
   // ワークスペースまたはファイルアップロードの選択画面
   if (!formsData && !showFileUpload) {
+    console.log('ワークスペース一覧画面を表示:', { appMode, formsData: !!formsData, showFileUpload, currentWorkspace: !!currentWorkspace });
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <WorkspaceSelector
           onSelectWorkspace={handleSelectWorkspace}
           onCreateNew={handleCreateNew}
+          onScoringCriteria={handleScoringCriteria}
         />
       </div>
     );

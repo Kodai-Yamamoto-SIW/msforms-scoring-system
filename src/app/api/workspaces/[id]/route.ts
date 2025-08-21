@@ -5,10 +5,11 @@ import { UpdateWorkspaceRequest, ReimportDataRequest } from '@/types/forms';
 // 特定のワークスペース取得
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const workspace = await getWorkspace(params.id);
+        const { id } = await params;
+        const workspace = await getWorkspace(id);
 
         if (!workspace) {
             return NextResponse.json(
@@ -33,11 +34,12 @@ export async function GET(
 // ワークスペース更新
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const body: UpdateWorkspaceRequest = await request.json();
-        console.log('ワークスペース更新リクエスト:', params.id, body);
+        console.log('ワークスペース更新リクエスト:', id, body);
 
         // バリデーション
         if (!body.name?.trim()) {
@@ -47,7 +49,7 @@ export async function PUT(
             );
         }
 
-        const updatedWorkspace = await updateWorkspace(params.id, {
+        const updatedWorkspace = await updateWorkspace(id, {
             name: body.name.trim(),
             description: body.description?.trim() || undefined,
         });
@@ -75,11 +77,12 @@ export async function PUT(
 // ワークスペースデータ再インポート
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const body: ReimportDataRequest = await request.json();
-        console.log('データ再インポートリクエスト:', params.id);
+        console.log('データ再インポートリクエスト:', id);
 
         // バリデーション
         if (!body.newData || !body.fileName) {
@@ -89,7 +92,7 @@ export async function PATCH(
             );
         }
 
-        const result = await reimportWorkspaceData(params.id, body.newData, body.fileName);
+        const result = await reimportWorkspaceData(id, body.newData, body.fileName);
 
         if (!result.success) {
             return NextResponse.json(
@@ -118,10 +121,11 @@ export async function PATCH(
 // ワークスペース削除
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const success = await deleteWorkspace(params.id);
+        const { id } = await params;
+        const success = await deleteWorkspace(id);
 
         if (!success) {
             return NextResponse.json(

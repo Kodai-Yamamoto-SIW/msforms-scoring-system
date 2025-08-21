@@ -7,9 +7,10 @@ import FileReimportButton from './FileReimportButton';
 interface WorkspaceSelectorProps {
     onSelectWorkspace: (workspaceId: string) => void;
     onCreateNew: () => void;
+    onScoringCriteria?: (workspaceId: string) => void;
 }
 
-export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: WorkspaceSelectorProps) {
+export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew, onScoringCriteria }: WorkspaceSelectorProps) {
     const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -308,6 +309,14 @@ export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: Wo
                                             >
                                                 開く
                                             </button>
+                                            {onScoringCriteria && (
+                                                <button
+                                                    onClick={() => onScoringCriteria(workspace.id)}
+                                                    className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors"
+                                                >
+                                                    採点基準
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => startEditWorkspace(workspace)}
                                                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"

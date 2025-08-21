@@ -21,6 +21,19 @@ export interface ParsedFormsData {
     responses: FormsResponse[];
 }
 
+// 採点基準の型定義
+export interface ScoringCriterion {
+    id: string;
+    description: string; // 採点基準の説明
+    maxScore: number; // 最大得点
+}
+
+export interface QuestionScoringCriteria {
+    questionIndex: number; // 問題のインデックス
+    questionText: string; // 問題文
+    criteria: ScoringCriterion[]; // 採点基準のリスト
+}
+
 // 採点ワークスペース関連の型定義
 export interface ScoringWorkspace {
     id: string;
@@ -30,6 +43,7 @@ export interface ScoringWorkspace {
     updatedAt: string;
     formsData: ParsedFormsData;
     fileName: string; // 元のExcelファイル名
+    scoringCriteria?: QuestionScoringCriteria[]; // 採点基準
 }
 
 export interface CreateWorkspaceRequest {
