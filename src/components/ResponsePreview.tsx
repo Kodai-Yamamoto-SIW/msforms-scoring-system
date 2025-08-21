@@ -9,6 +9,7 @@ interface ResponsePreviewProps {
 
 export default function ResponsePreview({ data }: ResponsePreviewProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [showBasicInfo, setShowBasicInfo] = useState(false);
 
     if (!data.responses.length) {
         return (
@@ -73,79 +74,86 @@ export default function ResponsePreview({ data }: ResponsePreviewProps) {
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto p-6">
-            {/* ナビゲーションヘッダー */}
-            <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-lg">
-                <div className="text-lg font-medium">
-                    回答者: {currentResponse.名前} ({currentIndex + 1} / {data.totalResponses})
+        <div className="w-full max-w-6xl mx-auto p-4">
+            {/* 回答者ナビゲーション - コンパクトで目立つ */}
+            <div className="sticky top-0 bg-white border rounded-lg shadow-sm p-4 mb-6 z-10">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="text-xl font-bold text-gray-800">
+                            {currentResponse.名前}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                            {currentIndex + 1} / {data.totalResponses}
+                        </div>
+                        <button
+                            onClick={() => setShowBasicInfo(!showBasicInfo)}
+                            className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        >
+                            {showBasicInfo ? '詳細を隠す' : '詳細を表示'}
+                        </button>
+                    </div>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={prevResponse}
+                            disabled={data.responses.length <= 1}
+                            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                        >
+                            ← 前
+                        </button>
+                        <button
+                            onClick={nextResponse}
+                            disabled={data.responses.length <= 1}
+                            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                        >
+                            次 →
+                        </button>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={prevResponse}
-                        disabled={data.responses.length <= 1}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        ← 前へ
-                    </button>
-                    <button
-                        onClick={nextResponse}
-                        disabled={data.responses.length <= 1}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        次へ →
-                    </button>
-                </div>
+
+                {/* 基本情報 - 折りたたみ可能でコンパクト */}
+                {showBasicInfo && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <span className="text-gray-500">ID:</span> {currentResponse.ID}
+                            </div>
+                            <div>
+                                <span className="text-gray-500">メール:</span> {currentResponse.メール}
+                            </div>
+                            <div>
+                                <span className="text-gray-500">開始:</span> {formatDateTime(currentResponse.開始時刻)}
+                            </div>
+                            <div>
+                                <span className="text-gray-500">完了:</span> {formatDateTime(currentResponse.完了時刻)}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* 基本情報 */}
-            <div className="bg-white border rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-medium mb-4">基本情報</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">ID</label>
-                        <div className="p-2 bg-gray-50 rounded">{currentResponse.ID}</div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">名前</label>
-                        <div className="p-2 bg-gray-50 rounded">{currentResponse.名前}</div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
-                        <div className="p-2 bg-gray-50 rounded">{currentResponse.メール}</div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">開始時刻</label>
-                        <div className="p-2 bg-gray-50 rounded">{formatDateTime(currentResponse.開始時刻)}</div>
-                    </div>
-                    <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">完了時刻</label>
-                        <div className="p-2 bg-gray-50 rounded">{formatDateTime(currentResponse.完了時刻)}</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* 回答内容 */}
-            <div className="bg-white border rounded-lg p-6">
-                <h3 className="text-lg font-medium mb-4">回答内容</h3>
-                <div className="space-y-6">
-                    {data.questions.map((question, index) => (
-                        <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0">
-                            <div className="mb-2">
-                                <span className="inline-block bg-blue-100 text-blue-800 text-sm font-medium px-2 py-1 rounded">
+            {/* 回答内容 - メインコンテンツとして大きく表示 */}
+            <div className="space-y-8">
+                {data.questions.map((question, index) => (
+                    <div key={index} className="bg-white border rounded-lg p-6 shadow-sm">
+                        <div className="mb-4">
+                            <div className="flex items-center gap-3 mb-3">
+                                <span className="bg-blue-600 text-white text-lg font-bold px-4 py-2 rounded-md">
                                     問{index + 1}
                                 </span>
                             </div>
-                            <div className="mb-3 text-sm font-medium text-gray-700">
+                            <div className="text-gray-800 font-medium text-lg leading-relaxed">
                                 {question}
                             </div>
-                            <div className="p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500">
-                                <div className="whitespace-pre-wrap text-gray-800">
-                                    {currentResponse[question] || '（回答なし）'}
-                                </div>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
+                            <div className="text-gray-800 text-base leading-relaxed whitespace-pre-wrap">
+                                {currentResponse[question] || (
+                                    <span className="text-gray-400 italic">（回答なし）</span>
+                                )}
                             </div>
                         </div>
-                    ))}
-                </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
