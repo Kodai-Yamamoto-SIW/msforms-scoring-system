@@ -13,6 +13,8 @@ export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: Wo
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set());
+    const [editingWorkspace, setEditingWorkspace] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState({ name: '', description: '' });
 
     useEffect(() => {
         loadWorkspaces();
@@ -71,6 +73,50 @@ export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: Wo
         });
     };
 
+    const startEditWorkspace = (workspace: WorkspaceSummary) => {
+        setEditingWorkspace(workspace.id);
+        setEditForm({
+            name: workspace.name,
+            description: workspace.description || ''
+        });
+    };
+
+    const cancelEdit = () => {
+        setEditingWorkspace(null);
+        setEditForm({ name: '', description: '' });
+    };
+
+    const saveEdit = async () => {
+        if (!editingWorkspace || !editForm.name.trim()) {
+            setError('ワークスペース名は必須です');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/workspaces/${editingWorkspace}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: editForm.name.trim(),
+                    description: editForm.description.trim() || undefined,
+                }),
+            });
+
+            if (response.ok) {
+                cancelEdit();
+                loadWorkspaces(); // ワークスペース一覧を再読み込み
+            } else {
+                const result = await response.json();
+                setError(result.error || 'ワークスペースの更新に失敗しました');
+            }
+        } catch (error) {
+            console.error('ワークスペース更新エラー:', error);
+            setError('ワークスペースの更新に失敗しました');
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-96">
@@ -124,48 +170,101 @@ export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: Wo
                             >
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <h3 className="text-lg font-medium text-gray-900">
-                                                {workspace.name}
-                                            </h3>
-                                            <button
-                                                onClick={() => toggleWorkspaceDetails(workspace.id)}
-                                                className="text-gray-400 hover:text-gray-600 text-sm"
-                                                title="詳細を表示/非表示"
-                                            >
-                                                {expandedWorkspaces.has(workspace.id) ? '▼' : '▶'}
-                                            </button>
-                                        </div>
-                                        {workspace.description && (
-                                            <p className="text-gray-600 mb-2">
-                                                {workspace.description}
-                                            </p>
-                                        )}
-                                        {expandedWorkspaces.has(workspace.id) && (
-                                            <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded mt-2">
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <span>📊 回答者: {workspace.totalResponses}名</span>
-                                                    <span>📝 問題: {workspace.totalQuestions}問</span>
-                                                    <span>📅 作成日: {new Date(workspace.createdAt).toLocaleDateString('ja-JP')}</span>
-                                                    <span className="text-gray-400">📁 ファイル: {workspace.fileName}</span>
+                                        {editingWorkspace === workspace.id ? (
+                                            // 編集モード
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        ワークスペース名 *
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={editForm.name}
+                                                        onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        説明（任意）
+                                                    </label>
+                                                    <textarea
+                                                        value={editForm.description}
+                                                        onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                                                        rows={2}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={saveEdit}
+                                                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                                                    >
+                                                        保存
+                                                    </button>
+                                                    <button
+                                                        onClick={cancelEdit}
+                                                        className="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600"
+                                                    >
+                                                        キャンセル
+                                                    </button>
                                                 </div>
                                             </div>
+                                        ) : (
+                                            // 表示モード
+                                            <>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <h3 className="text-lg font-medium text-gray-900">
+                                                        {workspace.name}
+                                                    </h3>
+                                                    <button
+                                                        onClick={() => toggleWorkspaceDetails(workspace.id)}
+                                                        className="text-gray-400 hover:text-gray-600 text-sm"
+                                                        title="詳細を表示/非表示"
+                                                    >
+                                                        {expandedWorkspaces.has(workspace.id) ? '▼' : '▶'}
+                                                    </button>
+                                                </div>
+                                                {workspace.description && (
+                                                    <p className="text-gray-600 mb-2">
+                                                        {workspace.description}
+                                                    </p>
+                                                )}
+                                                {expandedWorkspaces.has(workspace.id) && (
+                                                    <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded mt-2">
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <span>📊 回答者: {workspace.totalResponses}名</span>
+                                                            <span>📝 問題: {workspace.totalQuestions}問</span>
+                                                            <span>📅 作成日: {new Date(workspace.createdAt).toLocaleDateString('ja-JP')}</span>
+                                                            <span className="text-gray-400">📁 ファイル: {workspace.fileName}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
-                                    <div className="flex gap-2 ml-4">
-                                        <button
-                                            onClick={() => onSelectWorkspace(workspace.id)}
-                                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-                                        >
-                                            開く
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteWorkspace(workspace.id, workspace.name)}
-                                            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
-                                        >
-                                            削除
-                                        </button>
-                                    </div>
+                                    {editingWorkspace !== workspace.id && (
+                                        <div className="flex gap-2 ml-4">
+                                            <button
+                                                onClick={() => onSelectWorkspace(workspace.id)}
+                                                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
+                                            >
+                                                開く
+                                            </button>
+                                            <button
+                                                onClick={() => startEditWorkspace(workspace)}
+                                                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                                            >
+                                                編集
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteWorkspace(workspace.id, workspace.name)}
+                                                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+                                            >
+                                                削除
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}

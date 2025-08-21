@@ -126,6 +126,37 @@ export const deleteWorkspace = async (id: string): Promise<boolean> => {
     }
 };
 
+// ワークスペースを更新
+export const updateWorkspace = async (id: string, updates: { name?: string; description?: string }): Promise<ScoringWorkspace | null> => {
+    ensureDataDir();
+
+    try {
+        const filePath = path.join(DATA_DIR, `${id}.json`);
+        
+        // 既存のワークスペースを取得
+        const existingWorkspace = await getWorkspace(id);
+        if (!existingWorkspace) {
+            return null;
+        }
+
+        // 更新されたワークスペースを作成
+        const updatedWorkspace: ScoringWorkspace = {
+            ...existingWorkspace,
+            ...updates,
+            updatedAt: new Date().toISOString(),
+        };
+
+        // ファイルに保存
+        await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
+        console.log('ワークスペース更新完了:', updatedWorkspace.id);
+        
+        return updatedWorkspace;
+    } catch (error) {
+        console.error(`ワークスペース ${id} の更新に失敗:`, error);
+        return null;
+    }
+};
+
 // ワークスペースIDを生成
 const generateWorkspaceId = (): string => {
     const timestamp = Date.now().toString(36);

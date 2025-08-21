@@ -39,6 +39,11 @@ export interface CreateWorkspaceRequest {
     formsData: ParsedFormsData;
 }
 
+export interface UpdateWorkspaceRequest {
+    name?: string;
+    description?: string;
+}
+
 export interface WorkspaceSummary {
     id: string;
     name: string;
