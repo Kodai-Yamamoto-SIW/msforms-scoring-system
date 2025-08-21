@@ -25,8 +25,8 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                 criteria: [
                     {
                         id: generateCriterionId(),
-                        description: '基本要件を満たしている',
-                        maxScore: 10
+                        description: '',
+                        maxScore: 1
                     }
                 ]
             }));
@@ -49,7 +49,7 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                             {
                                 id: generateCriterionId(),
                                 description: '',
-                                maxScore: 5
+                                maxScore: 1
                             }
                         ]
                     }
@@ -100,7 +100,7 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                     return;
                 }
                 if (criterion.maxScore <= 0) {
-                    alert(`問題 ${questionCriteria.questionIndex + 1} の採点基準で無効な得点が設定されています`);
+                    alert(`問題 ${questionCriteria.questionIndex + 1} の採点基準で無効な配点が設定されています`);
                     return;
                 }
             }
@@ -124,7 +124,7 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                     ワークスペース: {workspace.name}
                 </p>
                 <p className="text-sm text-gray-500 mt-2">
-                    各問題に対して採点基準を設定してください。基準ごとに説明と最大得点を入力します。
+                    各問題に対して採点基準を設定してください。基準ごとに説明と配点を入力します。
                 </p>
             </div>
 
@@ -139,7 +139,7 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                                 {questionCriteria.questionText}
                             </div>
                             <div className="text-sm text-gray-500">
-                                合計満点: {getTotalMaxScore(questionCriteria)}点
+                                満点: {getTotalMaxScore(questionCriteria)}点
                             </div>
                         </div>
 
@@ -160,7 +160,7 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                                     </div>
                                     <div className="w-24">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            最大得点
+                                            配点
                                         </label>
                                         <input
                                             type="number"

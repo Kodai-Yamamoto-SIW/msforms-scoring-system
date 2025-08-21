@@ -51,16 +51,12 @@ export default function Home() {
   };
 
   const handleScoringCriteria = async (workspaceId: string) => {
-    console.log('採点基準ボタンがクリックされました:', workspaceId);
     try {
       const response = await fetch(`/api/workspaces/${workspaceId}`);
       const result = await response.json();
-      console.log('API応答:', result);
 
       if (result.success) {
-        console.log('ワークスペース設定中:', result.workspace);
         setCurrentWorkspace(result.workspace);
-        console.log('appModeを scoringCriteria に変更');
         setAppMode('scoringCriteria');
       } else {
         alert('ワークスペースの読み込みに失敗しました');
@@ -110,7 +106,6 @@ export default function Home() {
 
   // 採点基準設定画面
   if (appMode === 'scoringCriteria' && currentWorkspace) {
-    console.log('採点基準設定画面を表示:', appMode, currentWorkspace?.name);
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="container mx-auto px-4">
@@ -126,7 +121,6 @@ export default function Home() {
 
   // ワークスペースまたはファイルアップロードの選択画面
   if (!formsData && !showFileUpload) {
-    console.log('ワークスペース一覧画面を表示:', { appMode, formsData: !!formsData, showFileUpload, currentWorkspace: !!currentWorkspace });
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <WorkspaceSelector
