@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { WorkspaceSummary } from '@/types/forms';
+import FileReimportButton from './FileReimportButton';
 
 interface WorkspaceSelectorProps {
     onSelectWorkspace: (workspaceId: string) => void;
@@ -15,6 +16,8 @@ export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: Wo
     const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set());
     const [editingWorkspace, setEditingWorkspace] = useState<string | null>(null);
     const [editForm, setEditForm] = useState({ name: '', description: '' });
+    const [reimportingWorkspace, setReimportingWorkspace] = useState<string | null>(null);
+    const [reimportError, setReimportError] = useState<string | null>(null);
 
     useEffect(() => {
         loadWorkspaces();
@@ -117,6 +120,47 @@ export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: Wo
         }
     };
 
+    const handleFileReimport = async (workspaceId: string, file: File) => {
+        setReimportingWorkspace(workspaceId);
+        setReimportError(null);
+
+        try {
+            // ファイルを解析
+            const { parseFormsExcel } = await import('@/utils/excelParser');
+            const newData = await parseFormsExcel(file);
+
+            // 再インポートAPIを呼び出し
+            const response = await fetch(`/api/workspaces/${workspaceId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    newData: newData,
+                    fileName: file.name,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert(`データの再インポートが完了しました\n${JSON.stringify(result.details, null, 2)}`);
+                loadWorkspaces(); // ワークスペース一覧を再読み込み
+            } else {
+                let errorMessage = result.error || 'データの再インポートに失敗しました';
+                if (result.details && Array.isArray(result.details)) {
+                    errorMessage += '\n\n詳細:\n' + result.details.join('\n');
+                }
+                setReimportError(errorMessage);
+            }
+        } catch (error) {
+            console.error('ファイル再インポートエラー:', error);
+            setReimportError('ファイルの処理に失敗しました');
+        } finally {
+            setReimportingWorkspace(null);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-96">
@@ -141,6 +185,19 @@ export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: Wo
                     <div className="text-red-800">{error}</div>
                     <button
                         onClick={() => setError(null)}
+                        className="mt-2 text-sm text-red-600 underline"
+                    >
+                        閉じる
+                    </button>
+                </div>
+            )}
+
+            {reimportError && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="text-red-800 font-medium">再インポートエラー</div>
+                    <div className="text-red-600 text-sm mt-1 whitespace-pre-line">{reimportError}</div>
+                    <button
+                        onClick={() => setReimportError(null)}
                         className="mt-2 text-sm text-red-600 underline"
                     >
                         閉じる
@@ -257,6 +314,12 @@ export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: Wo
                                             >
                                                 編集
                                             </button>
+                                            <FileReimportButton
+                                                workspaceId={workspace.id}
+                                                workspaceName={workspace.name}
+                                                onReimport={handleFileReimport}
+                                                isLoading={reimportingWorkspace === workspace.id}
+                                            />
                                             <button
                                                 onClick={() => handleDeleteWorkspace(workspace.id, workspace.name)}
                                                 className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"

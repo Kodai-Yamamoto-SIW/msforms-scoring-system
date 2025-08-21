@@ -1,7 +1,8 @@
 // サーバーサイドデータストレージ（ファイルベース）
 import fs from 'fs';
 import path from 'path';
-import { ScoringWorkspace, WorkspaceSummary, CreateWorkspaceRequest } from '@/types/forms';
+import { ScoringWorkspace, WorkspaceSummary, CreateWorkspaceRequest, ParsedFormsData, FormsResponse } from '@/types/forms';
+import { validateDataCompatibility, detectDataDifferences } from '@/utils/dataValidation';
 
 const DATA_DIR = path.join(process.cwd(), 'data', 'workspaces');
 
@@ -132,7 +133,7 @@ export const updateWorkspace = async (id: string, updates: { name?: string; desc
 
     try {
         const filePath = path.join(DATA_DIR, `${id}.json`);
-        
+
         // 既存のワークスペースを取得
         const existingWorkspace = await getWorkspace(id);
         if (!existingWorkspace) {
@@ -149,11 +150,117 @@ export const updateWorkspace = async (id: string, updates: { name?: string; desc
         // ファイルに保存
         await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
         console.log('ワークスペース更新完了:', updatedWorkspace.id);
-        
+
         return updatedWorkspace;
     } catch (error) {
         console.error(`ワークスペース ${id} の更新に失敗:`, error);
         return null;
+    }
+};
+
+// ワークスペースのデータを再インポート
+export const reimportWorkspaceData = async (
+    id: string,
+    newData: ParsedFormsData,
+    fileName: string
+): Promise<{
+    success: boolean;
+    error?: string;
+    details?: {
+        added?: number;
+        updated?: number;
+        removed?: number;
+        totalResponses?: number;
+    } | string[];
+}> => {
+    ensureDataDir();
+
+    try {
+        console.log('ワークスペースデータ再インポート開始:', id);
+
+        // 既存のワークスペースを取得
+        const existingWorkspace = await getWorkspace(id);
+        if (!existingWorkspace) {
+            return { success: false, error: 'ワークスペースが見つかりません' };
+        }
+
+        console.log('既存データの問題数:', existingWorkspace.formsData.questions.length);
+        console.log('新規データの問題数:', newData.questions.length);
+
+        // データの互換性を検証
+        const validation = validateDataCompatibility(existingWorkspace.formsData, newData);
+        if (!validation.isValid) {
+            return {
+                success: false,
+                error: 'データの互換性エラー',
+                details: validation.errors
+            };
+        }
+
+        // データの差分を検出
+        const diff = detectDataDifferences(existingWorkspace.formsData, newData);
+        console.log('データ差分:', {
+            added: diff.added.length,
+            updated: diff.updated.length,
+            removed: diff.removed.length
+        });
+
+        // 新しいレスポンスリストを構築
+        const responseMap = new Map<string, FormsResponse>();
+
+        // 既存の回答をマップに追加（削除されないもののみ）
+        existingWorkspace.formsData.responses.forEach(response => {
+            const email = String(response.メール);
+            const isRemoved = diff.removed.some(r => String(r.メール) === email);
+            if (!isRemoved) {
+                responseMap.set(email, response);
+            }
+        });
+
+        // 更新された回答で上書き
+        diff.updated.forEach(response => {
+            const email = String(response.メール);
+            responseMap.set(email, response);
+        });
+
+        // 新規追加された回答を追加
+        diff.added.forEach(response => {
+            const email = String(response.メール);
+            responseMap.set(email, response);
+        });
+
+        // 最終的なレスポンス配列を構築
+        const updatedResponses = Array.from(responseMap.values());
+
+        // 更新されたワークスペースを作成
+        const updatedWorkspace: ScoringWorkspace = {
+            ...existingWorkspace,
+            formsData: {
+                ...newData,
+                responses: updatedResponses,
+                totalResponses: updatedResponses.length
+            },
+            fileName: fileName,
+            updatedAt: new Date().toISOString(),
+        };
+
+        // ファイルに保存
+        const filePath = path.join(DATA_DIR, `${id}.json`);
+        await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
+        console.log('ワークスペースデータ再インポート完了:', id);
+
+        return {
+            success: true,
+            details: {
+                added: diff.added.length,
+                updated: diff.updated.length,
+                removed: diff.removed.length,
+                totalResponses: updatedResponses.length
+            }
+        };
+    } catch (error) {
+        console.error(`ワークスペース ${id} のデータ再インポートに失敗:`, error);
+        return { success: false, error: 'データの再インポートに失敗しました' };
     }
 };
 

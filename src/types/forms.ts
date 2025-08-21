@@ -44,6 +44,22 @@ export interface UpdateWorkspaceRequest {
     description?: string;
 }
 
+export interface ReimportDataRequest {
+    newData: ParsedFormsData;
+    fileName: string;
+}
+
+export interface DataValidationResult {
+    isValid: boolean;
+    errors: string[];
+}
+
+export interface DataDiffResult {
+    added: FormsResponse[];
+    removed: FormsResponse[];
+    updated: FormsResponse[];
+}
+
 export interface WorkspaceSummary {
     id: string;
     name: string;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getWorkspace, deleteWorkspace, updateWorkspace } from '@/lib/workspace';
-import { UpdateWorkspaceRequest } from '@/types/forms';
+import { getWorkspace, deleteWorkspace, updateWorkspace, reimportWorkspaceData } from '@/lib/workspace';
+import { UpdateWorkspaceRequest, ReimportDataRequest } from '@/types/forms';
 
 // 特定のワークスペース取得
 export async function GET(
@@ -38,7 +38,7 @@ export async function PUT(
     try {
         const body: UpdateWorkspaceRequest = await request.json();
         console.log('ワークスペース更新リクエスト:', params.id, body);
-        
+
         // バリデーション
         if (!body.name?.trim()) {
             return NextResponse.json(
@@ -67,6 +67,49 @@ export async function PUT(
         console.error('ワークスペース更新エラー:', error);
         return NextResponse.json(
             { error: 'ワークスペースの更新に失敗しました' },
+            { status: 500 }
+        );
+    }
+}
+
+// ワークスペースデータ再インポート
+export async function PATCH(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const body: ReimportDataRequest = await request.json();
+        console.log('データ再インポートリクエスト:', params.id);
+
+        // バリデーション
+        if (!body.newData || !body.fileName) {
+            return NextResponse.json(
+                { error: '必要なデータが不足しています' },
+                { status: 400 }
+            );
+        }
+
+        const result = await reimportWorkspaceData(params.id, body.newData, body.fileName);
+
+        if (!result.success) {
+            return NextResponse.json(
+                {
+                    error: result.error,
+                    details: result.details
+                },
+                { status: 400 }
+            );
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: 'データの再インポートが完了しました',
+            details: result.details
+        });
+    } catch (error) {
+        console.error('データ再インポートエラー:', error);
+        return NextResponse.json(
+            { error: 'データの再インポートに失敗しました' },
             { status: 500 }
         );
     }
