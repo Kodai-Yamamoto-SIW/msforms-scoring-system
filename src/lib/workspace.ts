@@ -1,0 +1,134 @@
+// サーバーサイドデータストレージ（ファイルベース）
+import fs from 'fs';
+import path from 'path';
+import { ScoringWorkspace, WorkspaceSummary, CreateWorkspaceRequest } from '@/types/forms';
+
+const DATA_DIR = path.join(process.cwd(), 'data', 'workspaces');
+
+// データディレクトリの初期化
+const ensureDataDir = () => {
+    if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+};
+
+// ワークスペースを保存
+export const saveWorkspace = async (request: CreateWorkspaceRequest): Promise<ScoringWorkspace> => {
+    console.log('saveWorkspace 関数が呼ばれました');
+    ensureDataDir();
+    console.log('データディレクトリを確認/作成しました:', DATA_DIR);
+
+    const workspace: ScoringWorkspace = {
+        id: generateWorkspaceId(),
+        name: request.name,
+        description: request.description,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        formsData: request.formsData,
+        fileName: request.fileName,
+    };
+
+    console.log('作成するワークスペース:', {
+        id: workspace.id,
+        name: workspace.name,
+        fileName: workspace.fileName,
+        dataSize: JSON.stringify(workspace.formsData).length
+    });
+
+    const filePath = path.join(DATA_DIR, `${workspace.id}.json`);
+    console.log('保存先ファイルパス:', filePath);
+
+    try {
+        await fs.promises.writeFile(filePath, JSON.stringify(workspace, null, 2), 'utf-8');
+        console.log('ファイル保存完了');
+
+        // 実際にファイルが作成されたか確認
+        const exists = fs.existsSync(filePath);
+        console.log('ファイル存在確認:', exists);
+
+        return workspace;
+    } catch (error) {
+        console.error('ファイル保存エラー:', error);
+        throw error;
+    }
+};
+
+// ワークスペース一覧を取得
+export const getWorkspaces = async (): Promise<WorkspaceSummary[]> => {
+    console.log('getWorkspaces 関数が呼ばれました');
+    ensureDataDir();
+    console.log('データディレクトリ:', DATA_DIR);
+
+    try {
+        const files = await fs.promises.readdir(DATA_DIR);
+        console.log('見つかったファイル:', files);
+        const workspaceSummaries: WorkspaceSummary[] = [];
+
+        for (const file of files) {
+            if (file.endsWith('.json')) {
+                try {
+                    const filePath = path.join(DATA_DIR, file);
+                    const content = await fs.promises.readFile(filePath, 'utf-8');
+                    const workspace: ScoringWorkspace = JSON.parse(content);
+
+                    workspaceSummaries.push({
+                        id: workspace.id,
+                        name: workspace.name,
+                        description: workspace.description,
+                        createdAt: workspace.createdAt,
+                        updatedAt: workspace.updatedAt,
+                        fileName: workspace.fileName,
+                        totalResponses: workspace.formsData.totalResponses,
+                        totalQuestions: workspace.formsData.questions.length,
+                    });
+                } catch (error) {
+                    console.error(`ワークスペースファイル ${file} の読み込みに失敗:`, error);
+                }
+            }
+        }
+
+        console.log('読み込んだワークスペース数:', workspaceSummaries.length);
+        // 更新日時の降順でソート
+        return workspaceSummaries.sort((a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
+    } catch (error) {
+        console.error('ワークスペース一覧の取得に失敗:', error);
+        return [];
+    }
+};
+
+// 特定のワークスペースを取得
+export const getWorkspace = async (id: string): Promise<ScoringWorkspace | null> => {
+    ensureDataDir();
+
+    try {
+        const filePath = path.join(DATA_DIR, `${id}.json`);
+        const content = await fs.promises.readFile(filePath, 'utf-8');
+        return JSON.parse(content);
+    } catch (error) {
+        console.error(`ワークスペース ${id} の取得に失敗:`, error);
+        return null;
+    }
+};
+
+// ワークスペースを削除
+export const deleteWorkspace = async (id: string): Promise<boolean> => {
+    ensureDataDir();
+
+    try {
+        const filePath = path.join(DATA_DIR, `${id}.json`);
+        await fs.promises.unlink(filePath);
+        return true;
+    } catch (error) {
+        console.error(`ワークスペース ${id} の削除に失敗:`, error);
+        return false;
+    }
+};
+
+// ワークスペースIDを生成
+const generateWorkspaceId = (): string => {
+    const timestamp = Date.now().toString(36);
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    return `ws_${timestamp}_${randomStr}`;
+};

@@ -6,12 +6,17 @@ import { parseFormsExcel } from '@/utils/excelParser';
 import { ParsedFormsData } from '@/types/forms';
 
 interface FileUploadProps {
-    onDataParsed: (data: ParsedFormsData) => void;
+    onWorkspaceCreated: (workspaceId: string) => void;
 }
 
-export default function FileUpload({ onDataParsed }: FileUploadProps) {
+export default function FileUpload({ onWorkspaceCreated }: FileUploadProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [workspaceName, setWorkspaceName] = useState('');
+    const [workspaceDescription, setWorkspaceDescription] = useState('');
+    const [showWorkspaceForm, setShowWorkspaceForm] = useState(false);
+    const [parsedData, setParsedData] = useState<ParsedFormsData | null>(null);
+    const [fileName, setFileName] = useState('');
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
         const file = acceptedFiles[0];
@@ -22,13 +27,75 @@ export default function FileUpload({ onDataParsed }: FileUploadProps) {
 
         try {
             const data = await parseFormsExcel(file);
-            onDataParsed(data);
+            setParsedData(data);
+            setFileName(file.name);
+
+            // ファイル名から拡張子と末尾の回答者数表示を削除してワークスペース名を生成
+            let cleanName = file.name.replace(/\.[^/.]+$/, ''); // 拡張子を削除
+            cleanName = cleanName.replace(/\(\d+-\d+\)$/, ''); // 末尾の (数字-数字) パターンを削除
+            cleanName = cleanName.trim(); // 前後の空白を削除
+
+            setWorkspaceName(cleanName);
+            setShowWorkspaceForm(true);
+            console.log('Excelファイルの解析が完了しました:', file.name);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'ファイルの処理に失敗しました');
         } finally {
             setIsLoading(false);
         }
-    }, [onDataParsed]);
+    }, []);
+
+    const handleCreateWorkspace = async () => {
+        if (!parsedData || !workspaceName.trim()) {
+            setError('ワークスペース名を入力してください');
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const workspaceData = {
+                name: workspaceName.trim(),
+                description: workspaceDescription.trim() || undefined,
+                formsData: parsedData,
+                fileName: fileName
+            };
+
+            console.log('送信するデータ:', workspaceData);
+
+            const response = await fetch('/api/workspaces', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(workspaceData),
+            });
+
+            console.log('レスポンスステータス:', response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('APIエラー:', errorText);
+                setError(`サーバーエラー: ${response.status} - ${errorText}`);
+                return;
+            }
+
+            const result = await response.json();
+            console.log('レスポンス結果:', result);
+
+            if (result.success) {
+                onWorkspaceCreated(result.workspace.id);
+            } else {
+                setError(result.error || 'ワークスペースの作成に失敗しました');
+            }
+        } catch (err) {
+            console.error('ワークスペース作成エラー:', err);
+            setError(`ワークスペースの作成に失敗しました: ${err instanceof Error ? err.message : String(err)}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -38,6 +105,93 @@ export default function FileUpload({ onDataParsed }: FileUploadProps) {
         },
         multiple: false
     });
+
+    if (showWorkspaceForm && parsedData) {
+        return (
+            <div className="w-full max-w-2xl mx-auto p-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                        ワークスペースを作成
+                    </h2>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label htmlFor="workspaceName" className="block text-sm font-medium text-gray-700 mb-1">
+                                ワークスペース名 *
+                            </label>
+                            <input
+                                type="text"
+                                id="workspaceName"
+                                value={workspaceName}
+                                onChange={(e) => setWorkspaceName(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="ワークスペース名を入力"
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="workspaceDescription" className="block text-sm font-medium text-gray-700 mb-1">
+                                説明（任意）
+                            </label>
+                            <textarea
+                                id="workspaceDescription"
+                                value={workspaceDescription}
+                                onChange={(e) => setWorkspaceDescription(e.target.value)}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="ワークスペースの説明を入力"
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                            <div><strong>ファイル:</strong> {fileName}</div>
+                            <div><strong>回答者数:</strong> {parsedData.totalResponses}名</div>
+                            <div><strong>問題数:</strong> {parsedData.questions.length}問</div>
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="text-red-700 font-medium">エラー</div>
+                            <div className="text-red-600 text-sm mt-1">{error}</div>
+                        </div>
+                    )}
+
+                    <div className="flex gap-3 mt-6">
+                        <button
+                            onClick={handleCreateWorkspace}
+                            disabled={isLoading || !workspaceName.trim()}
+                            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block mr-2"></div>
+                                    作成中...
+                                </>
+                            ) : (
+                                'ワークスペースを作成'
+                            )}
+                        </button>
+                        <button
+                            onClick={() => {
+                                setShowWorkspaceForm(false);
+                                setParsedData(null);
+                                setWorkspaceName('');
+                                setWorkspaceDescription('');
+                                setError(null);
+                            }}
+                            disabled={isLoading}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            キャンセル
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full max-w-2xl mx-auto p-6">

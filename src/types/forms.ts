@@ -20,3 +20,32 @@ export interface ParsedFormsData {
     questions: string[];
     responses: FormsResponse[];
 }
+
+// 採点ワークスペース関連の型定義
+export interface ScoringWorkspace {
+    id: string;
+    name: string;
+    description?: string;
+    createdAt: string;
+    updatedAt: string;
+    formsData: ParsedFormsData;
+    fileName: string; // 元のExcelファイル名
+}
+
+export interface CreateWorkspaceRequest {
+    name: string;
+    description?: string;
+    fileName: string;
+    formsData: ParsedFormsData;
+}
+
+export interface WorkspaceSummary {
+    id: string;
+    name: string;
+    description?: string;
+    createdAt: string;
+    updatedAt: string;
+    fileName: string;
+    totalResponses: number;
+    totalQuestions: number;
+}
