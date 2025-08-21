@@ -57,12 +57,7 @@ export default function ResponsePreview({ data }: ResponsePreviewProps) {
         if (isCodeContent(content)) {
             const language = detectLanguage(content);
             return (
-                <div>
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                            {language === 'text' ? 'コード' : language.toUpperCase()}
-                        </span>
-                    </div>
+                <div className="relative group">
                     <SyntaxHighlighter
                         language={language === 'text' ? 'javascript' : language}
                         style={vscDarkPlus}
@@ -76,6 +71,10 @@ export default function ResponsePreview({ data }: ResponsePreviewProps) {
                     >
                         {content}
                     </SyntaxHighlighter>
+                    {/* 右上に小さく控えめに表示 */}
+                    <span className="absolute top-2 right-2 text-xs text-gray-400 bg-gray-800 bg-opacity-70 px-2 py-1 rounded opacity-60 group-hover:opacity-100 transition-opacity">
+                        {language === 'text' ? 'code' : language}
+                    </span>
                 </div>
             );
         }
