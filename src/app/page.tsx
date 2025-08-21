@@ -3,10 +3,14 @@
 import { useState } from 'react';
 import FileUpload from '@/components/FileUpload';
 import ResponsePreview from '@/components/ResponsePreview';
+import QuestionView from '@/components/QuestionView';
 import { ParsedFormsData } from '@/types/forms';
+
+type ViewMode = 'question' | 'person';
 
 export default function Home() {
   const [formsData, setFormsData] = useState<ParsedFormsData | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('question'); // デフォルトは問題ごと表示
 
   const handleDataParsed = (data: ParsedFormsData) => {
     setFormsData(data);
@@ -32,15 +36,44 @@ export default function Home() {
           <FileUpload onDataParsed={handleDataParsed} />
         ) : (
           <div>
-            <div className="text-center mb-6">
+            {/* 操作パネル */}
+            <div className="flex justify-center items-center gap-4 mb-6">
               <button
                 onClick={handleReset}
                 className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
               >
                 別のファイルを読み込む
               </button>
+
+              {/* 表示モード切り替え */}
+              <div className="flex bg-gray-200 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('question')}
+                  className={`px-4 py-2 rounded-md font-medium transition-colors ${viewMode === 'question'
+                      ? 'bg-green-600 text-white'
+                      : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                >
+                  📝 問題ごと表示
+                </button>
+                <button
+                  onClick={() => setViewMode('person')}
+                  className={`px-4 py-2 rounded-md font-medium transition-colors ${viewMode === 'person'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                >
+                  👤 人ごと表示
+                </button>
+              </div>
             </div>
-            <ResponsePreview data={formsData} />
+
+            {/* 表示モードに応じたコンポーネント */}
+            {viewMode === 'question' ? (
+              <QuestionView data={formsData} />
+            ) : (
+              <ResponsePreview data={formsData} />
+            )}
           </div>
         )}
       </div>
