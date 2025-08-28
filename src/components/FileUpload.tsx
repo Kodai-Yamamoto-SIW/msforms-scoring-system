@@ -27,7 +27,7 @@ export default function FileUpload({ onWorkspaceCreated }: FileUploadProps) {
             const reasons = Array.from(new Set(fileRejections.flatMap(fr => fr.errors.map(e => e.code)))).join(', ');
             setError(
                 `対応していないファイル形式です: ${names}\n` +
-                `サポートされている形式: .xlsx, .xls\n` +
+                `サポートされている形式: .xlsx, .xls, .csv\n` +
                 (reasons ? `詳細: ${reasons}` : '')
             );
             return;
@@ -35,7 +35,7 @@ export default function FileUpload({ onWorkspaceCreated }: FileUploadProps) {
 
         const file = acceptedFiles[0];
         if (!file) {
-            setError('ファイルを受け付けられませんでした。対応形式: .xlsx, .xls');
+            setError('ファイルを受け付けられませんでした。対応形式: .xlsx, .xls, .csv');
             return;
         }
 
@@ -53,7 +53,7 @@ export default function FileUpload({ onWorkspaceCreated }: FileUploadProps) {
 
             setWorkspaceName(cleanName);
             setShowWorkspaceForm(true);
-            console.log('Excelファイルの解析が完了しました:', file.name);
+            console.log('ファイルの解析が完了しました:', file.name);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'ファイルの処理に失敗しました');
         } finally {
@@ -117,7 +117,8 @@ export default function FileUpload({ onWorkspaceCreated }: FileUploadProps) {
         onDrop,
         accept: {
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-            'application/vnd.ms-excel': ['.xls']
+            'application/vnd.ms-excel': ['.xls'],
+            'text/csv': ['.csv']
         },
         multiple: false
     });
@@ -230,10 +231,10 @@ export default function FileUpload({ onWorkspaceCreated }: FileUploadProps) {
                     ) : (
                         <>
                             <div className="text-lg font-medium text-gray-700">
-                                {isDragActive ? 'ファイルをドロップしてください' : 'Microsoft Forms の Excel ファイルをアップロード'}
+                                {isDragActive ? 'ファイルをドロップしてください' : 'Microsoft Forms の Excel/CSV ファイルをアップロード'}
                             </div>
                             <div className="text-sm text-gray-500">
-                                .xlsx または .xls ファイルをドラッグ&ドロップするか、クリックしてファイルを選択
+                                .xlsx / .xls / .csv をドラッグ&ドロップするか、クリックしてファイルを選択
                             </div>
                         </>
                     )}

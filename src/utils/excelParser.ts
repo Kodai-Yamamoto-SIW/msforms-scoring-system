@@ -37,84 +37,94 @@ const convertExcelDate = (value: string | number | undefined): string => {
 };
 
 export const parseFormsExcel = (file: File): Promise<ParsedFormsData> => {
+    const parseWorkbookToFormsData = (workbook: XLSX.WorkBook): ParsedFormsData => {
+        // 最初のシートを取得
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+
+        // シートをJSONに変換（日付情報を保持）
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+            header: 1,
+            raw: false,
+            dateNF: 'yyyy/mm/dd hh:mm:ss'
+        });
+
+        if (jsonData.length < 2) {
+            throw new Error('データが不十分です');
+        }
+
+        // ヘッダー行を取得
+        const headers = jsonData[0] as string[];
+
+        // 基本列のインデックスを確認
+        const expectedColumns = ['ID', '開始時刻', '完了時刻', 'メール', '名前'];
+        expectedColumns.forEach((col, index) => {
+            if (headers[index] !== col) {
+                console.warn(`列 ${index} が期待値 "${col}" と異なります: "${headers[index]}"`);
+            }
+        });
+
+        // 問題文の列を特定（5列目以降）
+        const questionColumns = headers.slice(5);
+
+        // データ行を処理
+        const responses: FormsResponse[] = [];
+
+        for (let i = 1; i < jsonData.length; i++) {
+            const row = jsonData[i] as (string | number)[];
+
+            // ID列が空の場合は終了
+            if (!row[0]) break;
+
+            const response: FormsResponse = {
+                ID: Number(row[0]),
+                開始時刻: convertExcelDate(row[1]),
+                完了時刻: convertExcelDate(row[2]),
+                メール: String(row[3] || ''),
+                名前: String(row[4] || ''),
+            };
+
+            // 問題の回答を追加
+            questionColumns.forEach((question, index) => {
+                response[question] = String(row[5 + index] || '');
+            });
+
+            responses.push(response);
+        }
+
+        return {
+            totalResponses: responses.length,
+            questions: questionColumns,
+            responses
+        };
+    };
+
     return new Promise((resolve, reject) => {
+        const isCSV = /\.csv$/i.test(file.name) || file.type === 'text/csv';
         const reader = new FileReader();
+
+        reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'));
 
         reader.onload = (e) => {
             try {
-                const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
-
-                // 最初のシートを取得
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-
-                // シートをJSONに変換（日付情報を保持）
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-                    header: 1,
-                    raw: false,
-                    dateNF: 'yyyy/mm/dd hh:mm:ss'
-                });
-
-                if (jsonData.length < 2) {
-                    throw new Error('データが不十分です');
+                if (isCSV) {
+                    const text = e.target?.result as string;
+                    const workbook = XLSX.read(text, { type: 'string' });
+                    resolve(parseWorkbookToFormsData(workbook));
+                } else {
+                    const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    resolve(parseWorkbookToFormsData(workbook));
                 }
-
-                // ヘッダー行を取得
-                const headers = jsonData[0] as string[];
-
-                // 基本列のインデックスを確認
-                const expectedColumns = ['ID', '開始時刻', '完了時刻', 'メール', '名前'];
-                expectedColumns.forEach((col, index) => {
-                    if (headers[index] !== col) {
-                        console.warn(`列 ${index} が期待値 "${col}" と異なります: "${headers[index]}"`);
-                    }
-                });
-
-                // 問題文の列を特定（5列目以降）
-                const questionColumns = headers.slice(5);
-
-                // データ行を処理
-                const responses: FormsResponse[] = [];
-
-                for (let i = 1; i < jsonData.length; i++) {
-                    const row = jsonData[i] as (string | number)[];
-
-                    // ID列が空の場合は終了
-                    if (!row[0]) break;
-
-                    const response: FormsResponse = {
-                        ID: Number(row[0]),
-                        開始時刻: convertExcelDate(row[1]),
-                        完了時刻: convertExcelDate(row[2]),
-                        メール: String(row[3] || ''),
-                        名前: String(row[4] || ''),
-                    };
-
-                    // 問題の回答を追加
-                    questionColumns.forEach((question, index) => {
-                        response[question] = String(row[5 + index] || '');
-                    });
-
-                    responses.push(response);
-                }
-
-                const result: ParsedFormsData = {
-                    totalResponses: responses.length,
-                    questions: questionColumns,
-                    responses: responses
-                };
-
-                resolve(result);
             } catch (error) {
                 reject(error);
             }
         };
 
-        reader.onerror = () => {
-            reject(new Error('ファイルの読み込みに失敗しました'));
-        };
-
-        reader.readAsArrayBuffer(file);
+        if (isCSV) {
+            reader.readAsText(file, 'utf-8');
+        } else {
+            reader.readAsArrayBuffer(file);
+        }
     });
 };
