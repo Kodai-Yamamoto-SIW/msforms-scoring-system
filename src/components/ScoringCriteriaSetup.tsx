@@ -138,15 +138,16 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                                 </span>
                             </div>
                         </div>
-                        
+
                         {/* 右側: 合計点と操作ボタン */}
                         <div className="flex items-center gap-6">
-                            {/* 全体合計点表示 - よりコンパクトに */}
-                            <div className="text-right">
+
+                            {/* 全体合計点表示 - よりコンパクトに & タイトルと間隔を広げる */}
+                            <div className="text-right ml-4">
                                 <div className="text-xs text-gray-500 uppercase tracking-wide">総配点</div>
                                 <div className="text-xl font-bold text-indigo-600">{getGrandTotalScore()}<span className="text-sm text-gray-500 ml-1">点</span></div>
                             </div>
-                            
+
                             {/* 操作ボタン - 横並びに */}
                             <div className="flex gap-3">
                                 <button
@@ -179,73 +180,73 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
             {/* メインコンテンツ */}
             <div className="px-6">
 
-            <div className="space-y-8">
-                {criteriaList.map((questionCriteria) => (
-                    <div key={questionCriteria.questionIndex} className="border border-gray-200 rounded-lg p-6 bg-white">
-                        <div className="mb-4">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                                問題 {questionCriteria.questionIndex + 1}
-                            </h2>
-                            <div className="bg-gray-50 p-3 rounded text-gray-700 mb-2">
-                                {questionCriteria.questionText}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                                満点: {getTotalMaxScore(questionCriteria)}点
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            {questionCriteria.criteria.map((criterion, criterionIndex) => (
-                                <div key={criterion.id} className="flex gap-3 items-start p-3 bg-gray-50 rounded">
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            採点基準 {criterionIndex + 1}
-                                        </label>
-                                        <textarea
-                                            value={criterion.description}
-                                            onChange={(e) => updateCriterion(questionCriteria.questionIndex, criterion.id, { description: e.target.value })}
-                                            placeholder="採点基準の説明を入力..."
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            rows={2}
-                                        />
-                                    </div>
-                                    <div className="w-24">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            配点
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="100"
-                                            value={criterion.maxScore}
-                                            onChange={(e) => updateCriterion(questionCriteria.questionIndex, criterion.id, { maxScore: parseInt(e.target.value) || 0 })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    {questionCriteria.criteria.length > 1 && (
-                                        <button
-                                            onClick={() => removeCriterion(questionCriteria.questionIndex, criterion.id)}
-                                            className="text-red-600 hover:text-red-800 mt-6"
-                                            title="採点基準を削除"
-                                        >
-                                            🗑️
-                                        </button>
-                                    )}
+                <div className="space-y-8">
+                    {criteriaList.map((questionCriteria) => (
+                        <div key={questionCriteria.questionIndex} className="border border-gray-200 rounded-lg p-6 bg-white">
+                            <div className="mb-4">
+                                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                                    問題 {questionCriteria.questionIndex + 1}
+                                </h2>
+                                <div className="bg-gray-50 p-3 rounded text-gray-700 mb-2">
+                                    {questionCriteria.questionText}
                                 </div>
-                            ))}
-                        </div>
+                                <div className="text-sm text-gray-500">
+                                    満点: {getTotalMaxScore(questionCriteria)}点
+                                </div>
+                            </div>
 
-                        <div className="mt-4">
-                            <button
-                                onClick={() => addCriterion(questionCriteria.questionIndex)}
-                                className="text-blue-600 hover:text-blue-800 text-sm"
-                            >
-                                + 採点基準を追加
-                            </button>
+                            <div className="space-y-3">
+                                {questionCriteria.criteria.map((criterion, criterionIndex) => (
+                                    <div key={criterion.id} className="flex gap-3 items-start p-3 bg-gray-50 rounded">
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                採点基準 {criterionIndex + 1}
+                                            </label>
+                                            <textarea
+                                                value={criterion.description}
+                                                onChange={(e) => updateCriterion(questionCriteria.questionIndex, criterion.id, { description: e.target.value })}
+                                                placeholder="採点基準の説明を入力..."
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                rows={2}
+                                            />
+                                        </div>
+                                        <div className="w-24">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                配点
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="100"
+                                                value={criterion.maxScore}
+                                                onChange={(e) => updateCriterion(questionCriteria.questionIndex, criterion.id, { maxScore: parseInt(e.target.value) || 0 })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            />
+                                        </div>
+                                        {questionCriteria.criteria.length > 1 && (
+                                            <button
+                                                onClick={() => removeCriterion(questionCriteria.questionIndex, criterion.id)}
+                                                className="text-red-600 hover:text-red-800 mt-6"
+                                                title="採点基準を削除"
+                                            >
+                                                🗑️
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-4">
+                                <button
+                                    onClick={() => addCriterion(questionCriteria.questionIndex)}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                    + 採点基準を追加
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
             </div>
         </div>
     );
