@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
@@ -25,13 +25,21 @@ export default function QuestionView({ data, workspace }: QuestionViewProps) {
     // null = 未採点, true = 満たす, false = 満たさない
     const [scoreInputs, setScoreInputs] = useState<Record<number, Record<number, Record<string, boolean | null>>>>({});
 
+    // サーバー保存済みスコアの読込（workspaceのscoresが届いたら反映）
+    useEffect(() => {
+        if (workspace?.scores) {
+            setScoreInputs(workspace.scores);
+        }
+    }, [workspace?.scores]);
+
     // 採点入力変更ハンドラ（三択：未採点/満たす/満たさない）
-    const handleScoreChange = (questionIdx: number, responseId: number, criterionId: string, value: boolean) => {
+    const handleScoreChange = async (questionIdx: number, responseId: number, criterionId: string, value: boolean) => {
+        let computedValue: boolean | null = null;
         setScoreInputs(prev => {
             const currentValue = prev[questionIdx]?.[responseId]?.[criterionId];
             // 同じ値が選択された場合は未採点状態にリセット
             const newValue = currentValue === value ? null : value;
-
+            computedValue = newValue;
             return {
                 ...prev,
                 [questionIdx]: {
@@ -43,6 +51,24 @@ export default function QuestionView({ data, workspace }: QuestionViewProps) {
                 }
             };
         });
+
+        // 変更を即時保存
+        try {
+            if (workspace?.id) {
+                await fetch(`/api/workspaces/${workspace.id}/scores`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        questionIndex: questionIdx,
+                        responseId,
+                        criterionId,
+                        value: computedValue,
+                    }),
+                });
+            }
+        } catch (e) {
+            console.error('スコア保存に失敗しました', e);
+        }
     };
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [loopMessage, setLoopMessage] = useState<string | null>(null);

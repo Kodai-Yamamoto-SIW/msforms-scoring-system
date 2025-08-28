@@ -296,6 +296,42 @@ export const updateScoringCriteria = async (id: string, criteria: QuestionScorin
     }
 };
 
+// 採点結果を更新（部分更新: 指定された経路のみ上書き）
+export const upsertScores = async (
+    id: string,
+    updates: { questionIndex: number; responseId: number; criterionId: string; value: boolean | null }
+): Promise<ScoringWorkspace | null> => {
+    ensureDataDir();
+    try {
+        console.log('採点結果更新開始:', id, updates);
+        const existingWorkspace = await getWorkspace(id);
+        if (!existingWorkspace) return null;
+
+        const scores = existingWorkspace.scores || {};
+        const { questionIndex, responseId, criterionId, value } = updates;
+
+        // 深いコピーを作成して更新
+        const updatedScores: ScoringWorkspace['scores'] = { ...scores };
+        if (!updatedScores![questionIndex]) updatedScores![questionIndex] = {};
+        if (!updatedScores![questionIndex]![responseId]) updatedScores![questionIndex]![responseId] = {};
+        updatedScores![questionIndex]![responseId]![criterionId] = value;
+
+        const updatedWorkspace: ScoringWorkspace = {
+            ...existingWorkspace,
+            scores: updatedScores,
+            updatedAt: new Date().toISOString(),
+        };
+
+        const filePath = path.join(DATA_DIR, `${id}.json`);
+        await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
+        console.log('採点結果更新完了:', id);
+        return updatedWorkspace;
+    } catch (error) {
+        console.error('採点結果更新エラー:', error);
+        return null;
+    }
+};
+
 // ワークスペースIDを生成
 const generateWorkspaceId = (): string => {
     const timestamp = Date.now().toString(36);

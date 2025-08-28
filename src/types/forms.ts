@@ -44,6 +44,8 @@ export interface ScoringWorkspace {
     formsData: ParsedFormsData;
     fileName: string; // 元のExcelファイル名
     scoringCriteria?: QuestionScoringCriteria[]; // 採点基準
+    // 採点結果（questionIndex -> responseId -> criterionId -> boolean | null）
+    scores?: Record<number, Record<number, Record<string, boolean | null>>>;
 }
 
 export interface CreateWorkspaceRequest {
