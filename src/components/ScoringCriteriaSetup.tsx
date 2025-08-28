@@ -223,15 +223,13 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             />
                                         </div>
-                                        {questionCriteria.criteria.length > 1 && (
-                                            <button
-                                                onClick={() => removeCriterion(questionCriteria.questionIndex, criterion.id)}
-                                                className="text-red-600 hover:text-red-800 mt-6"
-                                                title="採点基準を削除"
-                                            >
-                                                🗑️
-                                            </button>
-                                        )}
+                                        <button
+                                            onClick={() => removeCriterion(questionCriteria.questionIndex, criterion.id)}
+                                            className="text-red-600 hover:text-red-800 mt-6"
+                                            title="採点基準を削除"
+                                        >
+                                            🗑️
+                                        </button>
                                     </div>
                                 ))}
                             </div>
