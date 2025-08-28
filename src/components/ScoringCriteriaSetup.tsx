@@ -18,17 +18,11 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
         if (workspace.scoringCriteria) {
             setCriteriaList(workspace.scoringCriteria);
         } else {
-            // 各問題に対して初期の採点基準を作成
+            // 各問題に対して初期の採点基準を未設定（空配列）にする
             const initialCriteria: QuestionScoringCriteria[] = workspace.formsData.questions.map((question, index) => ({
                 questionIndex: index,
                 questionText: question,
-                criteria: [
-                    {
-                        id: generateCriterionId(),
-                        description: '',
-                        maxScore: 1
-                    }
-                ]
+                criteria: []
             }));
             setCriteriaList(initialCriteria);
         }
@@ -87,13 +81,9 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
     };
 
     const handleSave = async () => {
-        // バリデーション
+        // バリデーション（未設定も許可）
         for (const questionCriteria of criteriaList) {
-            if (questionCriteria.criteria.length === 0) {
-                alert(`問題 ${questionCriteria.questionIndex + 1} に採点基準が設定されていません`);
-                return;
-            }
-
+            // criteria.length === 0 も許可
             for (const criterion of questionCriteria.criteria) {
                 if (!criterion.description.trim()) {
                     alert(`問題 ${questionCriteria.questionIndex + 1} に空の採点基準があります`);
