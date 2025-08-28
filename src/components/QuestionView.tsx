@@ -211,9 +211,6 @@ export default function QuestionView({ data, workspace }: QuestionViewProps) {
                                                 const currentValue = scoreInputs[questionIdx]?.[responseId]?.[criterion.id] ?? null;
                                                 return (
                                                     <div key={criterion.id} className="flex items-center gap-2">
-                                                        <span className="text-xs text-gray-600 max-w-32 truncate" title={criterion.description}>
-                                                            {criterion.description}
-                                                        </span>
                                                         <ButtonGroup variant="outlined" size="medium" disableElevation sx={{ minHeight: 0, minWidth: 0 }}>
                                                             <Tooltip title="満たす" arrow>
                                                                 <Button
@@ -254,6 +251,9 @@ export default function QuestionView({ data, workspace }: QuestionViewProps) {
                                                                 </Button>
                                                             </Tooltip>
                                                         </ButtonGroup>
+                                                        <span className="text-xs text-gray-600 max-w-32 truncate ml-2" title={criterion.description}>
+                                                            {criterion.description}
+                                                        </span>
                                                     </div>
                                                 );
                                             })}
