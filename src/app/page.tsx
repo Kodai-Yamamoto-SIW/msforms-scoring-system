@@ -52,22 +52,7 @@ export default function Home() {
     setAppMode('main');
   };
 
-  const handleScoringCriteria = async (workspaceId: string) => {
-    try {
-      const response = await fetch(`/api/workspaces/${workspaceId}`);
-      const result = await response.json();
 
-      if (result.success) {
-        setCurrentWorkspace(result.workspace);
-        setAppMode('scoringCriteria');
-      } else {
-        alert('ワークスペースの読み込みに失敗しました');
-      }
-    } catch (error) {
-      console.error('ワークスペース読み込みエラー:', error);
-      alert('ワークスペースの読み込みに失敗しました');
-    }
-  };
 
   const handleSaveScoringCriteria = async (criteria: QuestionScoringCriteria[]) => {
     if (!currentWorkspace) return;
@@ -128,7 +113,6 @@ export default function Home() {
         <WorkspaceSelector
           onSelectWorkspace={handleSelectWorkspace}
           onCreateNew={handleCreateNew}
-          onScoringCriteria={handleScoringCriteria}
         />
       </div>
     );

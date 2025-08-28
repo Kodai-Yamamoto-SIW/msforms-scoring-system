@@ -5,15 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 
 import ResponsePreview from "@/components/ResponsePreview";
 import QuestionView from "@/components/QuestionView";
-import ScoringCriteriaSetup from "@/components/ScoringCriteriaSetup";
-import { ParsedFormsData, ScoringWorkspace, QuestionScoringCriteria } from "@/types/forms";
+import { ParsedFormsData, ScoringWorkspace } from "@/types/forms";
 
 export default function WorkspacePage() {
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
     const [formsData, setFormsData] = useState<ParsedFormsData | null>(null);
     const [currentWorkspace, setCurrentWorkspace] = useState<ScoringWorkspace | null>(null);
-    const [appMode, setAppMode] = useState<"main" | "scoringCriteria">("main");
     const [viewMode, setViewMode] = useState<"question" | "person">("question");
 
     useEffect(() => {
@@ -28,41 +26,6 @@ export default function WorkspacePage() {
                 });
         }
     }, [id]);
-
-    const handleSaveScoringCriteria = async (criteria: QuestionScoringCriteria[]) => {
-        if (!currentWorkspace) return;
-        try {
-            const response = await fetch(`/api/workspaces/${currentWorkspace.id}/scoring-criteria`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ criteria }),
-            });
-            if (response.ok) {
-                const result = await response.json();
-                setCurrentWorkspace(result.workspace);
-                setAppMode("main");
-                alert("採点基準を保存しました");
-            } else {
-                alert("採点基準の保存に失敗しました");
-            }
-        } catch {
-            alert("採点基準の保存に失敗しました");
-        }
-    };
-
-    if (appMode === "scoringCriteria" && currentWorkspace) {
-        return (
-            <div className="min-h-screen bg-gray-50 py-8">
-                <div className="container mx-auto px-4">
-                    <ScoringCriteriaSetup
-                        workspace={currentWorkspace}
-                        onSave={handleSaveScoringCriteria}
-                        onCancel={() => setAppMode("main")}
-                    />
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
@@ -79,6 +42,12 @@ export default function WorkspacePage() {
                                 className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
                             >
                                 ワークスペース一覧に戻る
+                            </button>
+                            <button
+                                onClick={() => router.push(`/workspace/${id}/scoring-criteria`)}
+                                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                            >
+                                採点基準設定
                             </button>
                             <div className="flex bg-gray-200 rounded-lg p-1">
                                 <button
