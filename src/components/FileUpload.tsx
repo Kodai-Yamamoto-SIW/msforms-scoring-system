@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, type FileRejection } from 'react-dropzone';
 import { parseFormsExcel } from '@/utils/excelParser';
 import { ParsedFormsData } from '@/types/forms';
 
@@ -18,12 +18,28 @@ export default function FileUpload({ onWorkspaceCreated }: FileUploadProps) {
     const [parsedData, setParsedData] = useState<ParsedFormsData | null>(null);
     const [fileName, setFileName] = useState('');
 
-    const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const onDrop = useCallback(async (acceptedFiles: File[], fileRejections: FileRejection[]) => {
+        setError(null);
+
+        // 拒否されたファイルがある場合はエラー表示
+        if (fileRejections && fileRejections.length > 0) {
+            const names = fileRejections.map(fr => fr.file.name).join(', ');
+            const reasons = Array.from(new Set(fileRejections.flatMap(fr => fr.errors.map(e => e.code)))).join(', ');
+            setError(
+                `対応していないファイル形式です: ${names}\n` +
+                `サポートされている形式: .xlsx, .xls\n` +
+                (reasons ? `詳細: ${reasons}` : '')
+            );
+            return;
+        }
+
         const file = acceptedFiles[0];
-        if (!file) return;
+        if (!file) {
+            setError('ファイルを受け付けられませんでした。対応形式: .xlsx, .xls');
+            return;
+        }
 
         setIsLoading(true);
-        setError(null);
 
         try {
             const data = await parseFormsExcel(file);
