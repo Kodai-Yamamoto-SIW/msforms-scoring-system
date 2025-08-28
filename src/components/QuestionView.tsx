@@ -3,14 +3,42 @@
 import { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { ParsedFormsData } from '@/types/forms';
+import { ParsedFormsData, ScoringWorkspace, QuestionScoringCriteria, FormsResponse } from '@/types/forms';
 import { isCodeContent, detectLanguage } from '@/utils/codeDetection';
+
 
 interface QuestionViewProps {
     data: ParsedFormsData;
+    workspace?: ScoringWorkspace;
 }
 
-export default function QuestionView({ data }: QuestionViewProps) {
+export default function QuestionView({ data, workspace }: QuestionViewProps) {
+    // 採点基準の取得
+    const scoringCriteria: QuestionScoringCriteria[] | undefined = workspace?.scoringCriteria;
+
+    // 採点入力値を一時的に保持するstate（questionIndex→responseId→criterionId→boolean | null）
+    // null = 未採点, true = 満たす, false = 満たさない
+    const [scoreInputs, setScoreInputs] = useState<Record<number, Record<number, Record<string, boolean | null>>>>({});
+
+    // 採点入力変更ハンドラ（三択：未採点/満たす/満たさない）
+    const handleScoreChange = (questionIdx: number, responseId: number, criterionId: string, value: boolean) => {
+        setScoreInputs(prev => {
+            const currentValue = prev[questionIdx]?.[responseId]?.[criterionId];
+            // 同じ値が選択された場合は未採点状態にリセット
+            const newValue = currentValue === value ? null : value;
+
+            return {
+                ...prev,
+                [questionIdx]: {
+                    ...(prev[questionIdx] || {}),
+                    [responseId]: {
+                        ...((prev[questionIdx] || {})[responseId] || {}),
+                        [criterionId]: newValue
+                    }
+                }
+            };
+        });
+    };
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [loopMessage, setLoopMessage] = useState<string | null>(null);
 
@@ -150,10 +178,13 @@ export default function QuestionView({ data }: QuestionViewProps) {
                     回答一覧 ({data.totalResponses}件)
                 </h3>
                 <div className="grid gap-4">
-                    {data.responses.map((response, index) => (
-                        <div key={response.ID} className="bg-white border rounded-lg p-4 shadow-sm">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-3">
+                    {data.responses.map((response, index: number) => {
+                        const questionIdx = currentQuestionIndex;
+                        const responseId = Number(response.ID);
+                        const criteria = scoringCriteria?.[questionIdx]?.criteria || [];
+                        return (
+                            <div key={response.ID} className="bg-white border rounded-lg p-4 shadow-sm">
+                                <div className="flex items-center gap-3 mb-3">
                                     <span className="bg-blue-600 text-white text-sm font-medium px-3 py-1 rounded-full">
                                         {index + 1}
                                     </span>
@@ -164,16 +195,55 @@ export default function QuestionView({ data }: QuestionViewProps) {
                                         ID: {response.ID}
                                     </span>
                                 </div>
-                                {/* 将来的な採点機能のためのスペース */}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-400">未採点</span>
+                                <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 mb-3">
+                                    {renderAnswerContent(String(response[currentQuestion] || ''))}
+                                </div>
+                                {/* 採点UIを回答の下に移動 */}
+                                <div className="flex flex-col items-start gap-1">
+                                    {criteria.length > 0 ? (
+                                        <>
+                                            {criteria.map((criterion) => {
+                                                const currentValue = scoreInputs[questionIdx]?.[responseId]?.[criterion.id] ?? null;
+                                                return (
+                                                    <div key={criterion.id} className="flex items-center gap-2">
+                                                        <span className="text-xs text-gray-600 max-w-32 truncate" title={criterion.description}>
+                                                            {criterion.description}
+                                                        </span>
+                                                        <div className="flex gap-1">
+                                                            {/* 満たすボタン（緑のチェック） */}
+                                                            <button
+                                                                onClick={() => handleScoreChange(questionIdx, responseId, criterion.id, true)}
+                                                                className={`w-6 h-6 rounded border-2 flex items-center justify-center text-sm font-bold transition-colors ${currentValue === true
+                                                                    ? 'bg-green-500 border-green-500 text-white'
+                                                                    : 'border-gray-300 text-gray-400 hover:border-green-400 hover:text-green-500'
+                                                                    }`}
+                                                                title="満たす"
+                                                            >
+                                                                ✓
+                                                            </button>
+                                                            {/* 満たさないボタン（赤のバツ） */}
+                                                            <button
+                                                                onClick={() => handleScoreChange(questionIdx, responseId, criterion.id, false)}
+                                                                className={`w-6 h-6 rounded border-2 flex items-center justify-center text-sm font-bold transition-colors ${currentValue === false
+                                                                    ? 'bg-red-500 border-red-500 text-white'
+                                                                    : 'border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500'
+                                                                    }`}
+                                                                title="満たさない"
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </>
+                                    ) : (
+                                        <span className="text-xs text-gray-400">採点基準未設定</span>
+                                    )}
                                 </div>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
-                                {renderAnswerContent(String(response[currentQuestion] || ''))}
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </div>

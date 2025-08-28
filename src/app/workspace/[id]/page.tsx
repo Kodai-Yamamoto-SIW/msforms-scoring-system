@@ -64,7 +64,7 @@ export default function WorkspacePage() {
                                 </button>
                             </div>
                         </div>
-                        {viewMode === "question" ? <QuestionView data={formsData} /> : <ResponsePreview data={formsData} />}
+                        {viewMode === "question" ? <QuestionView data={formsData} workspace={currentWorkspace ?? undefined} /> : <ResponsePreview data={formsData} />}
                     </div>
                 )}
             </div>
