@@ -27,11 +27,11 @@ export default function FileReimportButton({
         const file = event.target.files?.[0];
         if (file) {
             // ファイル形式をチェック
-            const validExtensions = ['.xlsx', '.xls'];
+            const validExtensions = ['.xlsx', '.xls', '.csv'];
             const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
 
             if (!validExtensions.includes(fileExtension)) {
-                alert('Excel ファイル (.xlsx または .xls) を選択してください');
+                alert('対応形式のファイルを選択してください (.xlsx / .xls / .csv)');
                 return;
             }
 
@@ -56,7 +56,7 @@ export default function FileReimportButton({
             <input
                 ref={fileInputRef}
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx,.xls,.csv"
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
             />
@@ -64,7 +64,7 @@ export default function FileReimportButton({
                 onClick={handleButtonClick}
                 disabled={disabled || isLoading}
                 className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                title="Excelファイルを再インポート"
+                title="Excel/CSVファイルを再インポート"
             >
                 {isLoading ? (
                     <>
