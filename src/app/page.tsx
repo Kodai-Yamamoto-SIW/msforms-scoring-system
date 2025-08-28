@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import FileUpload from '@/components/FileUpload';
 import ResponsePreview from '@/components/ResponsePreview';
 import QuestionView from '@/components/QuestionView';
@@ -12,6 +13,7 @@ type ViewMode = 'question' | 'person';
 type AppMode = 'workspaceList' | 'main' | 'scoringCriteria';
 
 export default function Home() {
+  const router = useRouter();
   const [formsData, setFormsData] = useState<ParsedFormsData | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('question'); // デフォルトは問題ごと表示
   const [currentWorkspace, setCurrentWorkspace] = useState<ScoringWorkspace | null>(null);
@@ -23,8 +25,8 @@ export default function Home() {
     loadWorkspace(workspaceId);
   };
 
-  const handleSelectWorkspace = async (workspaceId: string) => {
-    loadWorkspace(workspaceId);
+  const handleSelectWorkspace = (workspaceId: string) => {
+    router.push(`/workspace/${workspaceId}`);
   };
 
   const loadWorkspace = async (workspaceId: string) => {
