@@ -1,9 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import ButtonGroup from '@mui/material/ButtonGroup';
+import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { ParsedFormsData, ScoringWorkspace, QuestionScoringCriteria, FormsResponse } from '@/types/forms';
+import { ParsedFormsData, ScoringWorkspace, QuestionScoringCriteria } from '@/types/forms';
 import { isCodeContent, detectLanguage } from '@/utils/codeDetection';
 
 
@@ -209,30 +214,46 @@ export default function QuestionView({ data, workspace }: QuestionViewProps) {
                                                         <span className="text-xs text-gray-600 max-w-32 truncate" title={criterion.description}>
                                                             {criterion.description}
                                                         </span>
-                                                        <div className="flex gap-1">
-                                                            {/* 満たすボタン（緑のチェック） */}
-                                                            <button
-                                                                onClick={() => handleScoreChange(questionIdx, responseId, criterion.id, true)}
-                                                                className={`w-6 h-6 rounded border-2 flex items-center justify-center text-sm font-bold transition-colors ${currentValue === true
-                                                                    ? 'bg-green-500 border-green-500 text-white'
-                                                                    : 'border-gray-300 text-gray-400 hover:border-green-400 hover:text-green-500'
-                                                                    }`}
-                                                                title="満たす"
-                                                            >
-                                                                ✓
-                                                            </button>
-                                                            {/* 満たさないボタン（赤のバツ） */}
-                                                            <button
-                                                                onClick={() => handleScoreChange(questionIdx, responseId, criterion.id, false)}
-                                                                className={`w-6 h-6 rounded border-2 flex items-center justify-center text-sm font-bold transition-colors ${currentValue === false
-                                                                    ? 'bg-red-500 border-red-500 text-white'
-                                                                    : 'border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500'
-                                                                    }`}
-                                                                title="満たさない"
-                                                            >
-                                                                ×
-                                                            </button>
-                                                        </div>
+                                                        <ButtonGroup variant="outlined" size="medium" disableElevation sx={{ minHeight: 0, minWidth: 0 }}>
+                                                            <Tooltip title="満たす" arrow>
+                                                                <Button
+                                                                    color={currentValue === true ? 'success' : 'inherit'}
+                                                                    variant={currentValue === true ? 'contained' : 'outlined'}
+                                                                    onClick={() => handleScoreChange(questionIdx, responseId, criterion.id, true)}
+                                                                    sx={{
+                                                                        minWidth: 36,
+                                                                        minHeight: 36,
+                                                                        width: 36,
+                                                                        height: 36,
+                                                                        p: 0,
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon fontSize="medium" style={{ margin: 0 }} />
+                                                                </Button>
+                                                            </Tooltip>
+                                                            <Tooltip title="満たさない" arrow>
+                                                                <Button
+                                                                    color={currentValue === false ? 'error' : 'inherit'}
+                                                                    variant={currentValue === false ? 'contained' : 'outlined'}
+                                                                    onClick={() => handleScoreChange(questionIdx, responseId, criterion.id, false)}
+                                                                    sx={{
+                                                                        minWidth: 36,
+                                                                        minHeight: 36,
+                                                                        width: 36,
+                                                                        height: 36,
+                                                                        p: 0,
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                    }}
+                                                                >
+                                                                    <CloseIcon fontSize="medium" style={{ margin: 0 }} />
+                                                                </Button>
+                                                            </Tooltip>
+                                                        </ButtonGroup>
                                                     </div>
                                                 );
                                             })}
