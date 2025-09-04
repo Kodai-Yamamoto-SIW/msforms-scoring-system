@@ -70,6 +70,7 @@ export const parseFormsExcel = (file: File): Promise<ParsedFormsData> => {
             const endAtIdx = idx('endAt');
             const accountIdx = idx('account');
             const traineeNameIdx = idx('traineeName');
+            const statusIdx = idx('status');
 
             // 利用可能な質問番号を抽出（qN/answer が存在する N）
             const qNumbers = headers
@@ -90,6 +91,15 @@ export const parseFormsExcel = (file: File): Promise<ParsedFormsData> => {
                 if (traineeIdIdx === -1 || traineeIdVal === undefined || traineeIdVal === null || String(traineeIdVal).trim() === '') {
                     // ID が無い行はスキップ
                     continue;
+                }
+
+                // status 列が存在し、値が 'NotStarted' の行はインポート対象外
+                if (statusIdx >= 0) {
+                    const statusVal = row[statusIdx];
+                    const statusStr = String(statusVal ?? '').trim();
+                    if (statusStr === 'NotStarted') {
+                        continue;
+                    }
                 }
 
                 const resp: FormsResponse = {
