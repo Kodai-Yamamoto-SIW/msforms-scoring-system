@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { ScoringWorkspace, QuestionScoringCriteria, ScoringCriterion } from '@/types/forms';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { detectLanguage } from '@/utils/codeDetection';
 
 interface ScoringCriteriaSetupProps {
     workspace: ScoringWorkspace;
@@ -171,19 +176,56 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
             <div className="px-6">
 
                 <div className="space-y-8">
-                    {criteriaList.map((questionCriteria) => (
-                        <div key={questionCriteria.questionIndex} className="border border-gray-200 rounded-lg p-6 bg-white">
-                            <div className="mb-4">
-                                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                                    問題 {questionCriteria.questionIndex + 1}
-                                </h2>
-                                <div className="bg-gray-50 p-3 rounded text-gray-700 mb-2">
-                                    {questionCriteria.questionText}
+                    {criteriaList.map((questionCriteria) => {
+                        const qIndex = questionCriteria.questionIndex;
+                        const displayTitle =
+                            workspace.questionTitles && workspace.questionTitles.length === workspace.formsData.questions.length &&
+                            workspace.questionTitles[qIndex] && workspace.questionTitles[qIndex].trim() !== ''
+                                ? workspace.questionTitles[qIndex]
+                                : questionCriteria.questionText;
+                        return (
+                            <div key={qIndex} className="border border-gray-200 rounded-lg p-6 bg-white">
+                                <div className="mb-4">
+                                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                                        問題 {qIndex + 1}
+                                    </h2>
+                                    <div className="prose max-w-none prose-pre:whitespace-pre-wrap prose-code:before:content-[''] prose-code:after:content-[''] mb-2">
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            components={{
+                                                code({ className, children, ...props }) {
+                                                    const codeString = String(children ?? '');
+                                                    const match = /language-(\w+)/.exec(className || '');
+                                                    const looksBlock = codeString.includes('\n');
+                                                    if (looksBlock) {
+                                                        const detected = detectLanguage(codeString);
+                                                        const lang = match?.[1] || (detected === 'text' ? 'javascript' : detected);
+                                                        return (
+                                                            <SyntaxHighlighter
+                                                                language={lang}
+                                                                style={vscDarkPlus}
+                                                                customStyle={{ margin: 0, borderRadius: '6px', fontSize: '13px', lineHeight: '1.4' }}
+                                                                wrapLongLines={true}
+                                                            >
+                                                                {codeString.replace(/\n$/, '')}
+                                                            </SyntaxHighlighter>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <code className={className} {...props}>
+                                                            {children}
+                                                        </code>
+                                                    );
+                                                },
+                                            }}
+                                        >
+                                            {displayTitle}
+                                        </ReactMarkdown>
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                        満点: {getTotalMaxScore(questionCriteria)}点
+                                    </div>
                                 </div>
-                                <div className="text-sm text-gray-500">
-                                    満点: {getTotalMaxScore(questionCriteria)}点
-                                </div>
-                            </div>
 
                             <div className="space-y-3">
                                 {questionCriteria.criteria.map((criterion, criterionIndex) => (
@@ -232,8 +274,9 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                                     + 採点基準を追加
                                 </button>
                             </div>
-                        </div>
-                    ))}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>
