@@ -8,9 +8,11 @@ import { isCodeContent, detectLanguage } from '@/utils/codeDetection';
 
 interface ResponsePreviewProps {
     data: ParsedFormsData;
+    // 任意: 表示用の問題タイトル
+    questionTitles?: string[];
 }
 
-export default function ResponsePreview({ data }: ResponsePreviewProps) {
+export default function ResponsePreview({ data, questionTitles }: ResponsePreviewProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showBasicInfo, setShowBasicInfo] = useState(false);
     const [loopMessage, setLoopMessage] = useState<string | null>(null);
@@ -217,7 +219,7 @@ export default function ResponsePreview({ data }: ResponsePreviewProps) {
                                 </span>
                             </div>
                             <div className="text-gray-800 font-medium text-lg leading-relaxed">
-                                {question}
+                                {questionTitles && questionTitles[index] && questionTitles[index].trim() !== '' ? questionTitles[index] : question}
                             </div>
                         </div>
                         <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">

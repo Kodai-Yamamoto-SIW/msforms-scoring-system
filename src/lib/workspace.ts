@@ -338,3 +338,29 @@ const generateWorkspaceId = (): string => {
     const randomStr = Math.random().toString(36).substring(2, 8);
     return `ws_${timestamp}_${randomStr}`;
 };
+
+// 表示用の問題タイトルを更新（配列長は questions と一致させる）
+export const updateQuestionTitles = async (id: string, titles: string[]): Promise<ScoringWorkspace | null> => {
+    ensureDataDir();
+    try {
+        const existingWorkspace = await getWorkspace(id);
+        if (!existingWorkspace) return null;
+
+        const questionCount = existingWorkspace.formsData.questions.length;
+        // タイトル配列を正規化（不足は空文字、過剰は切り詰め）
+        const normalized = Array.from({ length: questionCount }, (_, i) => (titles[i] ?? ''));
+
+        const updatedWorkspace: ScoringWorkspace = {
+            ...existingWorkspace,
+            questionTitles: normalized,
+            updatedAt: new Date().toISOString(),
+        };
+
+        const filePath = path.join(DATA_DIR, `${id}.json`);
+        await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
+        return updatedWorkspace;
+    } catch (error) {
+        console.error('質問タイトル更新エラー:', error);
+        return null;
+    }
+};

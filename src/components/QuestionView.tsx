@@ -81,7 +81,13 @@ export default function QuestionView({ data, workspace }: QuestionViewProps) {
         );
     }
 
+    const displayTitles = workspace?.questionTitles && workspace.questionTitles.length === data.questions.length
+        ? workspace.questionTitles
+        : undefined;
     const currentQuestion = data.questions[currentQuestionIndex];
+    const currentDisplayTitle = displayTitles?.[currentQuestionIndex] && displayTitles[currentQuestionIndex].trim() !== ''
+        ? displayTitles[currentQuestionIndex]
+        : currentQuestion;
     const isFirst = currentQuestionIndex === 0;
     const isLast = currentQuestionIndex === data.questions.length - 1;
 
@@ -199,7 +205,7 @@ export default function QuestionView({ data, workspace }: QuestionViewProps) {
                     問{currentQuestionIndex + 1}
                 </h2>
                 <div className="text-gray-800 font-medium text-lg leading-relaxed">
-                    {currentQuestion}
+                    {currentDisplayTitle}
                 </div>
             </div>
 

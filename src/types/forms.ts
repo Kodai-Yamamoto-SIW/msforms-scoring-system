@@ -46,6 +46,8 @@ export interface ScoringWorkspace {
     scoringCriteria?: QuestionScoringCriteria[]; // 採点基準
     // 採点結果（questionIndex -> responseId -> criterionId -> boolean | null）
     scores?: Record<number, Record<number, Record<string, boolean | null>>>;
+    // 表示用の問題タイトル（インデックス対応）。未設定や空文字の場合は formsData.questions の値を表示に使用
+    questionTitles?: string[];
 }
 
 export interface CreateWorkspaceRequest {

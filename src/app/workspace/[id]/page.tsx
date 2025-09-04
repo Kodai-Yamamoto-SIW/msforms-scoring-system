@@ -49,6 +49,12 @@ export default function WorkspacePage() {
                             >
                                 採点基準設定
                             </button>
+                            <button
+                                onClick={() => router.push(`/workspace/${id}/question-settings`)}
+                                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+                            >
+                                問題文設定
+                            </button>
                             <div className="flex bg-gray-200 rounded-lg p-1">
                                 <button
                                     onClick={() => setViewMode("question")}
@@ -64,7 +70,11 @@ export default function WorkspacePage() {
                                 </button>
                             </div>
                         </div>
-                        {viewMode === "question" ? <QuestionView data={formsData} workspace={currentWorkspace ?? undefined} /> : <ResponsePreview data={formsData} />}
+                        {viewMode === "question" ? (
+                            <QuestionView data={formsData} workspace={currentWorkspace ?? undefined} />
+                        ) : (
+                            <ResponsePreview data={formsData} questionTitles={currentWorkspace?.questionTitles} />
+                        )}
                     </div>
                 )}
             </div>
