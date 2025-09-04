@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import ResponsePreview from "@/components/ResponsePreview";
 import QuestionView from "@/components/QuestionView";
+import ScoreSheetFill from "@/components/ScoreSheetFill";
 import { ParsedFormsData, ScoringWorkspace } from "@/types/forms";
 import { exportAllAsZip } from "@/utils/exportScores";
 
@@ -15,6 +16,7 @@ export default function WorkspacePage() {
     const [currentWorkspace, setCurrentWorkspace] = useState<ScoringWorkspace | null>(null);
     const [viewMode, setViewMode] = useState<"question" | "person">("question");
     const [questionFocusIndex, setQuestionFocusIndex] = useState<number>(0);
+    const [openScoreSheet, setOpenScoreSheet] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -57,6 +59,14 @@ export default function WorkspacePage() {
                             >
                                 問題文設定
                             </button>
+                            {currentWorkspace && (
+                                <button
+                                    onClick={() => setOpenScoreSheet(true)}
+                                    className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 transition-colors"
+                                >
+                                    点数シートに記入
+                                </button>
+                            )}
                             <button
                                 onClick={() => {
                                     if (!currentWorkspace) return;
@@ -131,6 +141,34 @@ export default function WorkspacePage() {
                             <QuestionView data={formsData} workspace={currentWorkspace ?? undefined} initialIndex={questionFocusIndex} />
                         ) : (
                             <ResponsePreview data={formsData} questionTitles={currentWorkspace?.questionTitles} />
+                        )}
+
+                        {openScoreSheet && currentWorkspace && (
+                            <div
+                                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                                onClick={() => setOpenScoreSheet(false)}
+                                role="dialog"
+                                aria-modal="true"
+                            >
+                                <div
+                                    className="w-full max-w-3xl bg-white rounded-lg shadow-xl overflow-hidden"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div className="flex items-center justify-between px-4 py-3 border-b">
+                                        <h2 className="text-lg font-semibold">点数シートに記入</h2>
+                                        <button
+                                            onClick={() => setOpenScoreSheet(false)}
+                                            className="px-2 py-1 text-gray-600 hover:text-gray-900"
+                                            aria-label="閉じる"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                    <div className="p-4">
+                                        <ScoreSheetFill workspace={currentWorkspace} />
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </div>
                 )}
