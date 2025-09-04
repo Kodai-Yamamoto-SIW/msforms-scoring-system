@@ -14,6 +14,7 @@ export default function WorkspacePage() {
     const [formsData, setFormsData] = useState<ParsedFormsData | null>(null);
     const [currentWorkspace, setCurrentWorkspace] = useState<ScoringWorkspace | null>(null);
     const [viewMode, setViewMode] = useState<"question" | "person">("question");
+    const [questionFocusIndex, setQuestionFocusIndex] = useState<number>(0);
 
     useEffect(() => {
         if (id) {
@@ -57,7 +58,26 @@ export default function WorkspacePage() {
                                 問題文設定
                             </button>
                             <button
-                                onClick={() => currentWorkspace && exportAllAsZip(currentWorkspace)}
+                                onClick={() => {
+                                    if (!currentWorkspace) return;
+                                    const ws = currentWorkspace;
+                                    const data = ws.formsData;
+                                    // 未設定の最初の問題を探索
+                                    let firstNoCriteria = -1;
+                                    for (let i = 0; i < data.questions.length; i++) {
+                                        const has = ws.scoringCriteria && ws.scoringCriteria[i] && ws.scoringCriteria[i].criteria && ws.scoringCriteria[i].criteria.length > 0;
+                                        if (!has) { firstNoCriteria = i; break; }
+                                    }
+                                    if (firstNoCriteria >= 0) {
+                                        // 問題ごと表示へ切り替え＆該当問題へ移動
+                                        setViewMode("question");
+                                        setQuestionFocusIndex(firstNoCriteria);
+                                        const title = (ws.questionTitles && ws.questionTitles[firstNoCriteria]) || data.questions[firstNoCriteria];
+                                        const ok = window.confirm(`問題${firstNoCriteria + 1}（${title}）に採点基準が設定されていません。\nそれでもエクスポートを実行しますか？`);
+                                        if (!ok) return;
+                                    }
+                                    exportAllAsZip(ws);
+                                }}
                                 className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
                             >
                                 採点結果をエクスポート
@@ -78,7 +98,7 @@ export default function WorkspacePage() {
                             </div>
                         </div>
                         {viewMode === "question" ? (
-                            <QuestionView data={formsData} workspace={currentWorkspace ?? undefined} />
+                            <QuestionView data={formsData} workspace={currentWorkspace ?? undefined} initialIndex={questionFocusIndex} />
                         ) : (
                             <ResponsePreview data={formsData} questionTitles={currentWorkspace?.questionTitles} />
                         )}

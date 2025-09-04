@@ -15,9 +15,10 @@ import { isCodeContent, detectLanguage } from '@/utils/codeDetection';
 interface QuestionViewProps {
     data: ParsedFormsData;
     workspace?: ScoringWorkspace;
+    initialIndex?: number;
 }
 
-export default function QuestionView({ data, workspace }: QuestionViewProps) {
+export default function QuestionView({ data, workspace, initialIndex }: QuestionViewProps) {
     // 採点基準の取得
     const scoringCriteria: QuestionScoringCriteria[] | undefined = workspace?.scoringCriteria;
 
@@ -72,6 +73,19 @@ export default function QuestionView({ data, workspace }: QuestionViewProps) {
     };
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [loopMessage, setLoopMessage] = useState<string | null>(null);
+    // 親から初期インデックスが与えられたら反映
+    useEffect(() => {
+        if (
+            typeof initialIndex === 'number' &&
+            initialIndex >= 0 &&
+            initialIndex < data.questions.length &&
+            initialIndex !== currentQuestionIndex
+        ) {
+            setCurrentQuestionIndex(initialIndex);
+        }
+        // 注意: currentQuestionIndex を依存に含めると、ボタン操作での変更が初期値で上書きされてしまう
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialIndex, data.questions.length]);
 
     if (!data.questions.length) {
         return (
