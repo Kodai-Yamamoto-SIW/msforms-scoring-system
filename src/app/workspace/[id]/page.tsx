@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import ResponsePreview from "@/components/ResponsePreview";
 import QuestionView from "@/components/QuestionView";
 import { ParsedFormsData, ScoringWorkspace } from "@/types/forms";
+import { exportAllAsZip } from "@/utils/exportScores";
 
 export default function WorkspacePage() {
     const { id } = useParams<{ id: string }>();
@@ -54,6 +55,12 @@ export default function WorkspacePage() {
                                 className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
                             >
                                 問題文設定
+                            </button>
+                            <button
+                                onClick={() => currentWorkspace && exportAllAsZip(currentWorkspace)}
+                                className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
+                            >
+                                採点結果をエクスポート
                             </button>
                             <div className="flex bg-gray-200 rounded-lg p-1">
                                 <button
