@@ -76,6 +76,36 @@ export default function WorkspacePage() {
                                         const ok = window.confirm(`問題${firstNoCriteria + 1}（${title}）に採点基準が設定されていません。\nそれでもエクスポートを実行しますか？`);
                                         if (!ok) return;
                                     }
+
+                                    // 未採点の項目がある最初の問題を探索（基準はあるが value が未設定）
+                                    let firstUngraded = -1;
+                                    for (let qi = 0; qi < data.questions.length; qi++) {
+                                        const cset = ws.scoringCriteria?.[qi]?.criteria || [];
+                                        if (cset.length === 0) continue; // 基準がない問題は対象外
+                                        const scoresForQ = ws.scores?.[qi] || {};
+                                        // いずれかの受講者・基準で未採点(null または undefined)を検出
+                                        let foundUngraded = false;
+                                        for (const resp of data.responses) {
+                                            const rid = Number(resp.ID);
+                                            const perResp = scoresForQ[rid] || {};
+                                            for (const criterion of cset) {
+                                                const v = perResp[criterion.id];
+                                                if (!(typeof v === 'boolean') && v !== false && v !== true) { // 未採点
+                                                    foundUngraded = true;
+                                                    break;
+                                                }
+                                            }
+                                            if (foundUngraded) break;
+                                        }
+                                        if (foundUngraded) { firstUngraded = qi; break; }
+                                    }
+                                    if (firstUngraded >= 0) {
+                                        setViewMode("question");
+                                        setQuestionFocusIndex(firstUngraded);
+                                        const title = (ws.questionTitles && ws.questionTitles[firstUngraded]) || data.questions[firstUngraded];
+                                        const ok2 = window.confirm(`問題${firstUngraded + 1}（${title}）に未採点の採点基準があります。\nそれでもエクスポートを実行しますか？`);
+                                        if (!ok2) return;
+                                    }
                                     exportAllAsZip(ws);
                                 }}
                                 className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
