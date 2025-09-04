@@ -232,76 +232,72 @@ export default function QuestionView({ data, workspace }: QuestionViewProps) {
                                 <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 mb-3">
                                     {renderAnswerContent(String(response[currentQuestion] || ''))}
                                 </div>
-                                {/* 採点部分：ボックスで囲み、見出しバッジを追加して視覚的に分離 */}
-                                <div className="w-full">
-                                    <div className="bg-white border border-gray-200 rounded-md p-3 mb-3 shadow-sm">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className="bg-gray-100 text-gray-800 text-sm font-medium px-2 py-0.5 rounded">採点</span>
+                                {/* 採点部分：基準がある場合のみ表示 */}
+                                {criteria.length > 0 && (
+                                    <div className="w-full">
+                                        <div className="bg-white border border-gray-200 rounded-md p-3 mb-3 shadow-sm">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="bg-gray-100 text-gray-800 text-sm font-medium px-2 py-0.5 rounded">採点</span>
+                                                </div>
+                                                <div />
                                             </div>
-                                            <div />
-                                        </div>
 
-                                        <div className="flex flex-col items-start gap-2">
-                                            {criteria.length > 0 ? (
-                                                <>
-                                                    {criteria.map((criterion) => {
-                                                        const currentValue = scoreInputs[questionIdx]?.[responseId]?.[criterion.id] ?? null;
-                                                        return (
-                                                            <div key={criterion.id} className="flex items-center gap-2 w-full">
-                                                                <ButtonGroup variant="outlined" size="medium" disableElevation sx={{ minHeight: 0, minWidth: 0 }}>
-                                                                    <Tooltip title="満たす" arrow>
-                                                                        <Button
-                                                                            color={currentValue === true ? 'success' : 'inherit'}
-                                                                            variant={currentValue === true ? 'contained' : 'outlined'}
-                                                                            onClick={() => handleScoreChange(questionIdx, responseId, criterion.id, true)}
-                                                                            sx={{
-                                                                                minWidth: 36,
-                                                                                minHeight: 36,
-                                                                                width: 36,
-                                                                                height: 36,
-                                                                                p: 0,
-                                                                                display: 'flex',
-                                                                                alignItems: 'center',
-                                                                                justifyContent: 'center',
-                                                                            }}
-                                                                        >
-                                                                            <CheckIcon fontSize="medium" style={{ margin: 0 }} />
-                                                                        </Button>
-                                                                    </Tooltip>
-                                                                    <Tooltip title="満たさない" arrow>
-                                                                        <Button
-                                                                            color={currentValue === false ? 'error' : 'inherit'}
-                                                                            variant={currentValue === false ? 'contained' : 'outlined'}
-                                                                            onClick={() => handleScoreChange(questionIdx, responseId, criterion.id, false)}
-                                                                            sx={{
-                                                                                minWidth: 36,
-                                                                                minHeight: 36,
-                                                                                width: 36,
-                                                                                height: 36,
-                                                                                p: 0,
-                                                                                display: 'flex',
-                                                                                alignItems: 'center',
-                                                                                justifyContent: 'center',
-                                                                            }}
-                                                                        >
-                                                                            <CloseIcon fontSize="medium" style={{ margin: 0 }} />
-                                                                        </Button>
-                                                                    </Tooltip>
-                                                                </ButtonGroup>
-                                                                <span className="text-xs text-gray-600 max-w-32 truncate ml-2" title={criterion.description}>
-                                                                    {criterion.description}
-                                                                </span>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </>
-                                            ) : (
-                                                <span className="text-xs text-gray-400">採点基準未設定</span>
-                                            )}
+                                            <div className="flex flex-col items-start gap-2">
+                                                {criteria.map((criterion) => {
+                                                    const currentValue = scoreInputs[questionIdx]?.[responseId]?.[criterion.id] ?? null;
+                                                    return (
+                                                        <div key={criterion.id} className="flex items-center gap-2 w-full">
+                                                            <ButtonGroup variant="outlined" size="medium" disableElevation sx={{ minHeight: 0, minWidth: 0 }}>
+                                                                <Tooltip title="満たす" arrow>
+                                                                    <Button
+                                                                        color={currentValue === true ? 'success' : 'inherit'}
+                                                                        variant={currentValue === true ? 'contained' : 'outlined'}
+                                                                        onClick={() => handleScoreChange(questionIdx, responseId, criterion.id, true)}
+                                                                        sx={{
+                                                                            minWidth: 36,
+                                                                            minHeight: 36,
+                                                                            width: 36,
+                                                                            height: 36,
+                                                                            p: 0,
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                        }}
+                                                                    >
+                                                                        <CheckIcon fontSize="medium" style={{ margin: 0 }} />
+                                                                    </Button>
+                                                                </Tooltip>
+                                                                <Tooltip title="満たさない" arrow>
+                                                                    <Button
+                                                                        color={currentValue === false ? 'error' : 'inherit'}
+                                                                        variant={currentValue === false ? 'contained' : 'outlined'}
+                                                                        onClick={() => handleScoreChange(questionIdx, responseId, criterion.id, false)}
+                                                                        sx={{
+                                                                            minWidth: 36,
+                                                                            minHeight: 36,
+                                                                            width: 36,
+                                                                            height: 36,
+                                                                            p: 0,
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                        }}
+                                                                    >
+                                                                        <CloseIcon fontSize="medium" style={{ margin: 0 }} />
+                                                                    </Button>
+                                                                </Tooltip>
+                                                            </ButtonGroup>
+                                                            <span className="text-xs text-gray-600 max-w-32 truncate ml-2" title={criterion.description}>
+                                                                {criterion.description}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         );
                     })}
