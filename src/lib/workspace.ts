@@ -277,10 +277,49 @@ export const updateScoringCriteria = async (id: string, criteria: QuestionScorin
             return null;
         }
 
+        // 既存のスコアをベースに、新規に追加された基準に初期値を反映する
+        const existingCriteria = existingWorkspace.scoringCriteria;
+        const scores: ScoringWorkspace['scores'] = existingWorkspace.scores ? { ...existingWorkspace.scores } : {};
+        const autoMask = existingWorkspace.formsData.autoCorrectMask || {};
+
+        // ヘルパー: 既存基準IDの集合を問題ごとに作成
+        const existingIdsByQ: Record<number, Set<string>> = {};
+        if (existingCriteria) {
+            for (const qc of existingCriteria) {
+                existingIdsByQ[qc.questionIndex] = new Set(qc.criteria.map(c => c.id));
+            }
+        }
+
+        // 新しい基準配列を走査し、各問題の新規基準に初期値を設定
+        for (const qc of criteria) {
+            const qIndex = qc.questionIndex;
+            const existingIds = existingIdsByQ[qIndex] || new Set<string>();
+            for (const c of qc.criteria) {
+                const isNew = !existingIds.has(c.id);
+                if (!isNew) continue; // 既存は変更しない
+
+                // 全回答者について初期値を設定
+                for (const resp of existingWorkspace.formsData.responses) {
+                    const rid = Number(resp.ID);
+                    // 自動正答マスクが真なら true を設定、そうでなければ（未設定のときのみ）nullのまま
+                    const isAutoCorrect = Boolean(autoMask[qIndex]?.[rid]);
+
+                    if (!scores![qIndex]) scores![qIndex] = {};
+                    if (!scores![qIndex]![rid]) scores![qIndex]![rid] = {};
+
+                    // まだ値が無い場合のみ初期値を入れる（ユーザーの採点は上書きしない）
+                    if (typeof scores![qIndex]![rid]![c.id] === 'undefined' || scores![qIndex]![rid]![c.id] === null) {
+                        scores![qIndex]![rid]![c.id] = isAutoCorrect ? true : null;
+                    }
+                }
+            }
+        }
+
         // 更新されたワークスペースを作成
         const updatedWorkspace: ScoringWorkspace = {
             ...existingWorkspace,
             scoringCriteria: criteria,
+            scores,
             updatedAt: new Date().toISOString(),
         };
 

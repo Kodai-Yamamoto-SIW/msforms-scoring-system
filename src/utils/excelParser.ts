@@ -83,6 +83,8 @@ export const parseFormsExcel = (file: File): Promise<ParsedFormsData> => {
 
             const uniqueQNumbers = Array.from(new Set(qNumbers));
             const questionLabels = uniqueQNumbers.map(n => `q${n}`);
+            // 正答マスク: questionIndex -> responseId -> true
+            const autoCorrectMask: Record<number, Record<number, boolean>> = {};
 
             const responses: FormsResponse[] = [];
             for (let i = 1; i < jsonData.length; i++) {
@@ -110,11 +112,24 @@ export const parseFormsExcel = (file: File): Promise<ParsedFormsData> => {
                     名前: String(traineeNameIdx >= 0 ? (row[traineeNameIdx] ?? '') : ''),
                 };
 
-                // 回答: qN/answer -> 'qN'
+                // 回答: qN/answer -> 'qN'; 併せて正答判定（qN/correct 非空 かつ qN/score != 0）
                 uniqueQNumbers.forEach(n => {
                     const colName = `q${n}/answer`;
                     const colIdx = headers.indexOf(colName);
                     resp[`q${n}`] = String(colIdx >= 0 ? (row[colIdx] ?? '') : '');
+
+                    const correctIdx = headers.indexOf(`q${n}/correct`);
+                    const scoreIdx = headers.indexOf(`q${n}/score`);
+                    const correctVal = correctIdx >= 0 ? row[correctIdx] : undefined;
+                    const scoreVal = scoreIdx >= 0 ? row[scoreIdx] : undefined;
+                    const hasCorrect = String(correctVal ?? '').trim() !== '';
+                    const scoreNum = Number(scoreVal);
+                    if (hasCorrect && !isNaN(scoreNum) && scoreNum !== 0) {
+                        const qIndex = uniqueQNumbers.indexOf(n);
+                        const rId = Number(traineeIdVal);
+                        if (!autoCorrectMask[qIndex]) autoCorrectMask[qIndex] = {};
+                        autoCorrectMask[qIndex][rId] = true;
+                    }
                 });
 
                 responses.push(resp);
@@ -124,6 +139,7 @@ export const parseFormsExcel = (file: File): Promise<ParsedFormsData> => {
                 totalResponses: responses.length,
                 questions: questionLabels,
                 responses,
+                autoCorrectMask,
             };
         }
 

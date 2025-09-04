@@ -19,6 +19,8 @@ export interface ParsedFormsData {
     totalResponses: number;
     questions: string[];
     responses: FormsResponse[];
+    // Track Training: 自動採点で正答だった回答のマスク（questionIndex -> responseId -> true）
+    autoCorrectMask?: Record<number, Record<number, boolean>>;
 }
 
 // 採点基準の型定義
@@ -48,6 +50,8 @@ export interface ScoringWorkspace {
     scores?: Record<number, Record<number, Record<string, boolean | null>>>;
     // 表示用の問題タイトル（インデックス対応）。未設定や空文字の場合は formsData.questions の値を表示に使用
     questionTitles?: string[];
+    // Track Training 由来: 自動採点で正答と判定された回答のマスク（questionIndex -> responseId -> true）
+    autoCorrectMask?: Record<number, Record<number, boolean>>;
 }
 
 export interface CreateWorkspaceRequest {
