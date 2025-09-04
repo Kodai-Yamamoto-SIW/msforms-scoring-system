@@ -221,7 +221,35 @@ export default function ResponsePreview({ data, questionTitles }: ResponsePrevie
                                 </span>
                             </div>
                             <div className="prose max-w-none prose-pre:whitespace-pre-wrap prose-code:before:content-[''] prose-code:after:content-['']">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        code({ className, children, ...props }) {
+                                            const codeString = String(children ?? '');
+                                            const match = /language-(\w+)/.exec(className || '');
+                                            const looksBlock = codeString.includes('\n');
+                                            if (looksBlock) {
+                                                const detected = detectLanguage(codeString);
+                                                const lang = match?.[1] || (detected === 'text' ? 'javascript' : detected);
+                                                return (
+                                                    <SyntaxHighlighter
+                                                        language={lang}
+                                                        style={vscDarkPlus}
+                                                        customStyle={{ margin: 0, borderRadius: '6px', fontSize: '13px', lineHeight: '1.4' }}
+                                                        wrapLongLines={true}
+                                                    >
+                                                        {codeString.replace(/\n$/, '')}
+                                                    </SyntaxHighlighter>
+                                                );
+                                            }
+                                            return (
+                                                <code className={className} {...props}>
+                                                    {children}
+                                                </code>
+                                            );
+                                        },
+                                    }}
+                                >
                                     {questionTitles && questionTitles[index] && questionTitles[index].trim() !== '' ? questionTitles[index] : question}
                                 </ReactMarkdown>
                             </div>
