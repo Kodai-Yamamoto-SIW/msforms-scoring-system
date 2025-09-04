@@ -180,7 +180,7 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                         const qIndex = questionCriteria.questionIndex;
                         const displayTitle =
                             workspace.questionTitles && workspace.questionTitles.length === workspace.formsData.questions.length &&
-                            workspace.questionTitles[qIndex] && workspace.questionTitles[qIndex].trim() !== ''
+                                workspace.questionTitles[qIndex] && workspace.questionTitles[qIndex].trim() !== ''
                                 ? workspace.questionTitles[qIndex]
                                 : questionCriteria.questionText;
                         return (
@@ -227,53 +227,53 @@ export default function ScoringCriteriaSetup({ workspace, onSave, onCancel }: Sc
                                     </div>
                                 </div>
 
-                            <div className="space-y-3">
-                                {questionCriteria.criteria.map((criterion, criterionIndex) => (
-                                    <div key={criterion.id} className="flex gap-3 items-start p-3 bg-gray-50 rounded">
-                                        <div className="flex-1">
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                採点基準 {criterionIndex + 1}
-                                            </label>
-                                            <textarea
-                                                value={criterion.description}
-                                                onChange={(e) => updateCriterion(questionCriteria.questionIndex, criterion.id, { description: e.target.value })}
-                                                placeholder="採点基準の説明を入力..."
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                rows={2}
-                                            />
+                                <div className="space-y-3">
+                                    {questionCriteria.criteria.map((criterion, criterionIndex) => (
+                                        <div key={criterion.id} className="flex gap-3 items-start p-3 bg-gray-50 rounded">
+                                            <div className="flex-1">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    採点基準 {criterionIndex + 1}
+                                                </label>
+                                                <textarea
+                                                    value={criterion.description}
+                                                    onChange={(e) => updateCriterion(questionCriteria.questionIndex, criterion.id, { description: e.target.value })}
+                                                    placeholder="採点基準の説明を入力..."
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    rows={2}
+                                                />
+                                            </div>
+                                            <div className="w-24">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    配点
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    max="100"
+                                                    value={criterion.maxScore}
+                                                    onChange={(e) => updateCriterion(questionCriteria.questionIndex, criterion.id, { maxScore: parseInt(e.target.value) || 0 })}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={() => removeCriterion(questionCriteria.questionIndex, criterion.id)}
+                                                className="text-red-600 hover:text-red-800 mt-6"
+                                                title="採点基準を削除"
+                                            >
+                                                🗑️
+                                            </button>
                                         </div>
-                                        <div className="w-24">
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                配点
-                                            </label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                max="100"
-                                                value={criterion.maxScore}
-                                                onChange={(e) => updateCriterion(questionCriteria.questionIndex, criterion.id, { maxScore: parseInt(e.target.value) || 0 })}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={() => removeCriterion(questionCriteria.questionIndex, criterion.id)}
-                                            className="text-red-600 hover:text-red-800 mt-6"
-                                            title="採点基準を削除"
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
 
-                            <div className="mt-4">
-                                <button
-                                    onClick={() => addCriterion(questionCriteria.questionIndex)}
-                                    className="text-blue-600 hover:text-blue-800 text-sm"
-                                >
-                                    + 採点基準を追加
-                                </button>
-                            </div>
+                                <div className="mt-4">
+                                    <button
+                                        onClick={() => addCriterion(questionCriteria.questionIndex)}
+                                        className="text-blue-600 hover:text-blue-800 text-sm"
+                                    >
+                                        + 採点基準を追加
+                                    </button>
+                                </div>
                             </div>
                         );
                     })}

@@ -293,7 +293,7 @@ export default function QuestionView({ data, workspace, initialIndex }: Question
                                                 {criteria.map((criterion) => {
                                                     const currentValue = scoreInputs[questionIdx]?.[responseId]?.[criterion.id] ?? null;
                                                     return (
-                                                        <div key={criterion.id} className="flex items-center gap-2 w-full">
+                                                        <div key={criterion.id} className="flex items-start gap-2 w-full">
                                                             <ButtonGroup variant="outlined" size="medium" disableElevation sx={{ minHeight: 0, minWidth: 0 }}>
                                                                 <Tooltip title="満たす" arrow>
                                                                     <Button
@@ -334,7 +334,10 @@ export default function QuestionView({ data, workspace, initialIndex }: Question
                                                                     </Button>
                                                                 </Tooltip>
                                                             </ButtonGroup>
-                                                            <span className="text-xs text-gray-600 max-w-32 truncate ml-2" title={criterion.description}>
+                                                            <span
+                                                                className="text-xs text-gray-600 ml-2 whitespace-pre-wrap break-words flex-1"
+                                                                title={criterion.description}
+                                                            >
                                                                 {criterion.description}
                                                             </span>
                                                         </div>
