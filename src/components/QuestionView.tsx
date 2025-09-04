@@ -9,6 +9,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ParsedFormsData, ScoringWorkspace, QuestionScoringCriteria } from '@/types/forms';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { isCodeContent, detectLanguage } from '@/utils/codeDetection';
 
 
@@ -218,8 +220,8 @@ export default function QuestionView({ data, workspace, initialIndex }: Question
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">
                     問{currentQuestionIndex + 1}
                 </h2>
-                <div className="text-gray-800 font-medium text-lg leading-relaxed">
-                    {currentDisplayTitle}
+                <div className="prose max-w-none prose-pre:whitespace-pre-wrap prose-code:before:content-[''] prose-code:after:content-['']">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentDisplayTitle}</ReactMarkdown>
                 </div>
             </div>
 

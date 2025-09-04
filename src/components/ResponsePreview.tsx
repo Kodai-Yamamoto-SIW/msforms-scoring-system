@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ParsedFormsData } from '@/types/forms';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { isCodeContent, detectLanguage } from '@/utils/codeDetection';
 
 interface ResponsePreviewProps {
@@ -218,8 +220,10 @@ export default function ResponsePreview({ data, questionTitles }: ResponsePrevie
                                     問{index + 1}
                                 </span>
                             </div>
-                            <div className="text-gray-800 font-medium text-lg leading-relaxed">
-                                {questionTitles && questionTitles[index] && questionTitles[index].trim() !== '' ? questionTitles[index] : question}
+                            <div className="prose max-w-none prose-pre:whitespace-pre-wrap prose-code:before:content-[''] prose-code:after:content-['']">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {questionTitles && questionTitles[index] && questionTitles[index].trim() !== '' ? questionTitles[index] : question}
+                                </ReactMarkdown>
                             </div>
                         </div>
                         <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
