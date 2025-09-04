@@ -53,10 +53,71 @@ export const parseFormsExcel = (file: File): Promise<ParsedFormsData> => {
             throw new Error('データが不十分です');
         }
 
-        // ヘッダー行を取得
-        const headers = jsonData[0] as string[];
+        // ヘッダー行を取得（string化して扱う）
+        const headers = (jsonData[0] as (string | number | boolean | null | undefined)[]).map(h => String(h ?? ''));
 
-        // 基本列のインデックスを確認
+        // Track Training 形式かの判定
+        const isTrackTraining =
+            headers.includes('traineeId') ||
+            headers.includes('account') ||
+            headers.some(h => /^q\d+\/answer$/.test(h));
+
+        if (isTrackTraining) {
+            // Track Training のヘッダー -> インデックスマップ
+            const idx = (name: string) => headers.indexOf(name);
+            const traineeIdIdx = idx('traineeId');
+            const startAtIdx = idx('startAt');
+            const endAtIdx = idx('endAt');
+            const accountIdx = idx('account');
+            const traineeNameIdx = idx('traineeName');
+
+            // 利用可能な質問番号を抽出（qN/answer が存在する N）
+            const qNumbers = headers
+                .map(h => {
+                    const m = h.match(/^q(\d+)\/answer$/);
+                    return m ? Number(m[1]) : null;
+                })
+                .filter((n): n is number => n !== null)
+                .sort((a, b) => a - b);
+
+            const uniqueQNumbers = Array.from(new Set(qNumbers));
+            const questionLabels = uniqueQNumbers.map(n => `q${n}`);
+
+            const responses: FormsResponse[] = [];
+            for (let i = 1; i < jsonData.length; i++) {
+                const row = jsonData[i] as (string | number | boolean | null | undefined)[];
+                const traineeIdVal = row[traineeIdIdx];
+                if (traineeIdIdx === -1 || traineeIdVal === undefined || traineeIdVal === null || String(traineeIdVal).trim() === '') {
+                    // ID が無い行はスキップ
+                    continue;
+                }
+
+                const resp: FormsResponse = {
+                    ID: Number(traineeIdVal),
+                    開始時刻: convertExcelDate(startAtIdx >= 0 ? (row[startAtIdx] as string | number | undefined) : ''),
+                    完了時刻: convertExcelDate(endAtIdx >= 0 ? (row[endAtIdx] as string | number | undefined) : ''),
+                    メール: String(accountIdx >= 0 ? (row[accountIdx] ?? '') : ''),
+                    名前: String(traineeNameIdx >= 0 ? (row[traineeNameIdx] ?? '') : ''),
+                };
+
+                // 回答: qN/answer -> 'qN'
+                uniqueQNumbers.forEach(n => {
+                    const colName = `q${n}/answer`;
+                    const colIdx = headers.indexOf(colName);
+                    resp[`q${n}`] = String(colIdx >= 0 ? (row[colIdx] ?? '') : '');
+                });
+
+                responses.push(resp);
+            }
+
+            return {
+                totalResponses: responses.length,
+                questions: questionLabels,
+                responses,
+            };
+        }
+
+        // 既存（Microsoft Forms）形式の処理
         const expectedColumns = ['ID', '開始時刻', '完了時刻', 'メール', '名前'];
         expectedColumns.forEach((col, index) => {
             if (headers[index] !== col) {
@@ -64,27 +125,20 @@ export const parseFormsExcel = (file: File): Promise<ParsedFormsData> => {
             }
         });
 
-        // 問題文の列を特定（5列目以降）
         const questionColumns = headers.slice(5);
-
-        // データ行を処理
         const responses: FormsResponse[] = [];
-
         for (let i = 1; i < jsonData.length; i++) {
-            const row = jsonData[i] as (string | number)[];
-
-            // ID列が空の場合は終了
-            if (!row[0]) break;
+            const row = jsonData[i] as (string | number | boolean | null | undefined)[];
+            if (!row[0]) break; // ID 空で終了
 
             const response: FormsResponse = {
                 ID: Number(row[0]),
-                開始時刻: convertExcelDate(row[1]),
-                完了時刻: convertExcelDate(row[2]),
+                開始時刻: convertExcelDate(row[1] as string | number | undefined),
+                完了時刻: convertExcelDate(row[2] as string | number | undefined),
                 メール: String(row[3] || ''),
                 名前: String(row[4] || ''),
             };
 
-            // 問題の回答を追加
             questionColumns.forEach((question, index) => {
                 response[question] = String(row[5 + index] || '');
             });
@@ -95,7 +149,7 @@ export const parseFormsExcel = (file: File): Promise<ParsedFormsData> => {
         return {
             totalResponses: responses.length,
             questions: questionColumns,
-            responses
+            responses,
         };
     };
 

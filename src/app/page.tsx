@@ -100,7 +100,7 @@ export default function Home() {
       <div className="container mx-auto px-4">
         <header className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Microsoft Forms 採点システム
+            アンケート採点システム（Forms / Track Training 対応）
           </h1>
           {currentWorkspace && (
             <p className="text-gray-600">

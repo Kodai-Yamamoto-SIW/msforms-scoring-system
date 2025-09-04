@@ -173,10 +173,10 @@ export default function WorkspaceSelector({ onSelectWorkspace, onCreateNew }: Wo
         <div className="max-w-4xl mx-auto p-6">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    MS Forms 採点システム
+                    アンケート採点システム（Forms / Track Training 対応）
                 </h1>
                 <p className="text-gray-600">
-                    ワークスペースを選択するか、新しいワークスペースを作成してください
+                    ワークスペースを選択するか、新しいワークスペースを作成してください（Microsoft Forms または Track Training のデータを読み込めます）
                 </p>
             </div>
 

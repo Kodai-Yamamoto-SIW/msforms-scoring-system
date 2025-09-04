@@ -31,7 +31,7 @@ export default function WorkspacePage() {
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="container mx-auto px-4">
                 <header className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">Microsoft Forms 採点システム</h1>
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">アンケート採点システム（Forms / Track Training 対応）</h1>
                     {currentWorkspace && <p className="text-gray-600">ワークスペース: {currentWorkspace.name}</p>}
                 </header>
                 {formsData && (

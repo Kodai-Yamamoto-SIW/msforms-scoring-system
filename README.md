@@ -1,11 +1,11 @@
-# Microsoft Forms 採点システム
+# アンケート採点システム（Forms / Track Training 対応）
 
-Microsoft Formsから出力されたExcelファイルを読み込み、回答をプレビューして採点を行うWebアプリケーションです。
+Microsoft Forms または Track Training のデータ（Excel/CSV）を読み込み、回答をプレビューして採点を行うWebアプリケーションです。
 
 ## 機能
 
 ### 現在実装済み
-- ✅ Microsoft Forms Excelファイルのアップロード機能
+- ✅ Microsoft Forms / Track Training の Excel/CSV アップロード機能
 - ✅ 回答データの解析とプレビュー機能
 - ✅ 一人ずつの回答表示（前へ/次へナビゲーション）
 - ✅ 基本情報（ID、名前、メール、時刻）の表示
@@ -42,16 +42,20 @@ npm run dev
 
 ## 使用方法
 
-1. Microsoft Formsから出力されたExcel (.xlsx) ファイルをドラッグ&ドロップまたはクリックしてアップロード
+1. Microsoft Forms または Track Training の Excel/CSV ファイル（.xlsx / .xls / .csv）をドラッグ&ドロップまたはクリックしてアップロード
 2. 回答データが自動で解析され、プレビュー画面が表示されます
 3. 「前へ」「次へ」ボタンで回答者を切り替えて内容を確認できます
 
-## Excelファイル形式
+## 入力データ形式
 
-対応するExcelファイルの形式：
-- 1行目：ヘッダー（ID, 開始時刻, 完了時刻, メール, 名前, 問題文1, 問題文2, ...）
-- 2行目以降：回答データ
-- ID列が空になるまでがデータ範囲
+- Microsoft Forms 形式（Excel/CSV）
+	- 1行目：ヘッダー（ID, 開始時刻, 完了時刻, メール, 名前, 問題文1, 問題文2, ...）
+	- 2行目以降：回答データ（IDが空になるまで）
+
+- Track Training 形式（CSV想定）
+	- 基本情報の列: traineeId, startAt, endAt, account, traineeName
+	- 回答の列: q1/answer, q2/answer, ...（問題文は含まれません）
+	- 本アプリでは質問ラベルを q1, q2, ... として扱います
 
 ## 開発
 

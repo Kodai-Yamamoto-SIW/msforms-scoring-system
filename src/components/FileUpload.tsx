@@ -231,7 +231,7 @@ export default function FileUpload({ onWorkspaceCreated }: FileUploadProps) {
                     ) : (
                         <>
                             <div className="text-lg font-medium text-gray-700">
-                                {isDragActive ? 'ファイルをドロップしてください' : 'Microsoft Forms の Excel/CSV ファイルをアップロード'}
+                                {isDragActive ? 'ファイルをドロップしてください' : 'Forms / Track Training の Excel/CSV ファイルをアップロード'}
                             </div>
                             <div className="text-sm text-gray-500">
                                 .xlsx / .xls / .csv をドラッグ&ドロップするか、クリックしてファイルを選択
