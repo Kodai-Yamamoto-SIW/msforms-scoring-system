@@ -6,9 +6,13 @@ import FileUpload from '@/components/FileUpload';
 export default function NewWorkspacePage() {
     const router = useRouter();
 
-    const handleWorkspaceCreated = (workspaceId: string) => {
-        // 作成後、ワークスペース詳細ページへ遷移
-        router.push(`/workspace/${workspaceId}`);
+    const handleWorkspaceCreated = (workspaceId: string, isTrackTraining: boolean) => {
+        // Track Training の場合は問題文設定から開始、それ以外は詳細ページへ
+        if (isTrackTraining) {
+            router.push(`/workspace/${workspaceId}/question-settings`);
+        } else {
+            router.push(`/workspace/${workspaceId}`);
+        }
     };
 
     return (

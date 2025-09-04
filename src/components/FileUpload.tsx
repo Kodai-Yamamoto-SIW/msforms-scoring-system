@@ -6,7 +6,7 @@ import { parseFormsExcel } from '@/utils/excelParser';
 import { ParsedFormsData } from '@/types/forms';
 
 interface FileUploadProps {
-    onWorkspaceCreated: (workspaceId: string) => void;
+    onWorkspaceCreated: (workspaceId: string, isTrackTraining: boolean) => void;
 }
 
 export default function FileUpload({ onWorkspaceCreated }: FileUploadProps) {
@@ -101,7 +101,8 @@ export default function FileUpload({ onWorkspaceCreated }: FileUploadProps) {
             console.log('レスポンス結果:', result);
 
             if (result.success) {
-                onWorkspaceCreated(result.workspace.id);
+                const isTrackTraining = !!parsedData && parsedData.questions.length > 0 && parsedData.questions.every(q => /^q\d+$/.test(q));
+                onWorkspaceCreated(result.workspace.id, isTrackTraining);
             } else {
                 setError(result.error || 'ワークスペースの作成に失敗しました');
             }
