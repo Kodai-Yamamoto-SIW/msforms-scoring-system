@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, MutableRefObject } from 'react';
+import React, { useState, useEffect, MutableRefObject, memo } from 'react';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
@@ -20,6 +20,184 @@ interface QuestionViewProps {
     initialIndex?: number;
     commentsRef?: MutableRefObject<Record<number, Record<number, string>>>; // 親が最新を参照するためのref
 }
+
+// 行コンポーネント（メモ化）
+import { FormsResponse } from '@/types/forms';
+
+interface AnswerRowProps {
+    index: number;
+    response: FormsResponse;
+    questionIdx: number;
+    criteria: QuestionScoringCriteria['criteria'];
+    scoreInputs: Record<number, Record<number, Record<string, boolean | null>>>;
+    onScoreChange: (questionIdx: number, responseId: number, criterionId: string, value: boolean) => void;
+    commentsRef?: MutableRefObject<Record<number, Record<number, string>>>;
+    workspaceId?: string;
+    renderAnswerContent: (content: string) => React.ReactElement;
+    questionKey: string; // key用に不変値
+}
+
+const AnswerRow = memo(function AnswerRow ({
+    index,
+    response,
+    questionIdx,
+    criteria,
+    scoreInputs,
+    onScoreChange,
+    commentsRef,
+    workspaceId,
+    renderAnswerContent,
+    questionKey,
+}: AnswerRowProps) {
+    const responseId = Number(response.ID);
+    return (
+        <div className="bg-white border rounded-lg p-4 shadow-sm" key={response.ID}>
+            <div className="flex items-center gap-3 mb-3">
+                <span className="bg-blue-600 text-white text-sm font-medium px-3 py-1 rounded-full">
+                    {index + 1}
+                </span>
+                <span className="font-medium text-gray-800">
+                    {response.名前}
+                </span>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 mb-3">
+                {renderAnswerContent(String(response[questionKey] || ''))}
+            </div>
+            {criteria.length > 0 && (
+                <div className="w-full">
+                    <div className="bg-white border border-gray-200 rounded-md p-3 mb-3 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <span className="bg-gray-100 text-gray-800 text-sm font-medium px-2 py-0.5 rounded">採点</span>
+                            </div>
+                            <div />
+                        </div>
+                        <div className="flex flex-col items-start gap-2">
+                            {criteria.map((criterion) => (
+                                <ScoreCell
+                                    key={criterion.id}
+                                    criterionId={criterion.id}
+                                    questionIdx={questionIdx}
+                                    responseId={responseId}
+                                    description={criterion.description}
+                                    value={scoreInputs[questionIdx]?.[responseId]?.[criterion.id] ?? null}
+                                    onScoreChange={onScoreChange}
+                                />
+                            ))}
+                            <div className="w-full mt-4">
+                                <label className="block text-xs font-medium text-gray-600 mb-1">コメント</label>
+                                <textarea
+                                    className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    rows={2}
+                                    defaultValue={commentsRef?.current?.[questionIdx]?.[responseId] || ''}
+                                    key={`c-${questionIdx}-${responseId}-${commentsRef?.current?.[questionIdx]?.[responseId] || ''}`}
+                                    placeholder="この回答へのフィードバックや指摘を入力..."
+                                    onChange={(e) => {
+                                        if (!commentsRef) return;
+                                        const value = e.target.value;
+                                        const cur = commentsRef.current;
+                                        if (!cur[questionIdx]) cur[questionIdx] = {};
+                                        cur[questionIdx][responseId] = value;
+                                    }}
+                                    onBlur={async (e) => {
+                                        if (!workspaceId) return;
+                                        const value = e.target.value;
+                                        try {
+                                            await fetch(`/api/workspaces/${workspaceId}/comments`, {
+                                                method: 'PUT',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    questionIndex: questionIdx,
+                                                    responseId,
+                                                    comment: value,
+                                                }),
+                                            });
+                                        } catch (err) {
+                                            console.error('コメント保存に失敗', err);
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}, (prev, next) => {
+    // スコアオブジェクトとコメント値が変わっていなければ再レンダー回避
+    const pid = Number(prev.response.ID);
+    const nid = Number(next.response.ID);
+    if (pid !== nid) return false;
+    const prevScore = prev.scoreInputs[prev.questionIdx]?.[pid];
+    const nextScore = next.scoreInputs[next.questionIdx]?.[nid];
+    if (prevScore !== nextScore) return false; // 参照変化時のみ再レンダー
+    // コメントは ref ミュータブル更新なのでここでは比較しない（変更で再レンダー不要）
+    return true;
+});
+
+// 個別スコアセル（更に細かいメモ化で同一行内の不要再レンダー抑制）
+interface ScoreCellProps {
+    criterionId: string;
+    questionIdx: number;
+    responseId: number;
+    description: string;
+    value: boolean | null;
+    onScoreChange: (questionIdx: number, responseId: number, criterionId: string, value: boolean) => void;
+}
+
+const ScoreCell = memo(function ScoreCell({ criterionId, questionIdx, responseId, description, value, onScoreChange }: ScoreCellProps) {
+    return (
+        <div className="flex items-start gap-2 w-full">
+            <ButtonGroup variant="outlined" size="medium" disableElevation sx={{ minHeight: 0, minWidth: 0 }}>
+                <Tooltip title="満たす" arrow>
+                    <Button
+                        color={value === true ? 'success' : 'inherit'}
+                        variant={value === true ? 'contained' : 'outlined'}
+                        onClick={() => onScoreChange(questionIdx, responseId, criterionId, true)}
+                        sx={{
+                            minWidth: 36,
+                            minHeight: 36,
+                            width: 36,
+                            height: 36,
+                            p: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <CheckIcon fontSize="medium" style={{ margin: 0 }} />
+                    </Button>
+                </Tooltip>
+                <Tooltip title="満たさない" arrow>
+                    <Button
+                        color={value === false ? 'error' : 'inherit'}
+                        variant={value === false ? 'contained' : 'outlined'}
+                        onClick={() => onScoreChange(questionIdx, responseId, criterionId, false)}
+                        sx={{
+                            minWidth: 36,
+                            minHeight: 36,
+                            width: 36,
+                            height: 36,
+                            p: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <CloseIcon fontSize="medium" style={{ margin: 0 }} />
+                    </Button>
+                </Tooltip>
+            </ButtonGroup>
+            <span
+                className="text-xs text-gray-600 ml-2 whitespace-pre-wrap break-words flex-1"
+                title={description}
+            >
+                {description}
+            </span>
+        </div>
+    );
+}, (prev, next) => prev.value === next.value && prev.description === next.description);
 
 export default function QuestionView({ data, workspace, initialIndex, commentsRef }: QuestionViewProps) {
     // 採点基準の取得
@@ -267,131 +445,21 @@ export default function QuestionView({ data, workspace, initialIndex, commentsRe
                     回答一覧 ({data.totalResponses}件)
                 </h3>
                 <div className="grid gap-4">
-                    {data.responses.map((response, index: number) => {
-                        const questionIdx = currentQuestionIndex;
-                        const responseId = Number(response.ID);
-                        const criteria = scoringCriteria?.[questionIdx]?.criteria || [];
-                        return (
-                            <div key={response.ID} className="bg-white border rounded-lg p-4 shadow-sm">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <span className="bg-blue-600 text-white text-sm font-medium px-3 py-1 rounded-full">
-                                        {index + 1}
-                                    </span>
-                                    <span className="font-medium text-gray-800">
-                                        {response.名前}
-                                    </span>
-                                </div>
-                                <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 mb-3">
-                                    {renderAnswerContent(String(response[currentQuestion] || ''))}
-                                </div>
-                                {/* 採点部分：基準がある場合のみ表示 */}
-                                {criteria.length > 0 && (
-                                    <div className="w-full">
-                                        <div className="bg-white border border-gray-200 rounded-md p-3 mb-3 shadow-sm">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="bg-gray-100 text-gray-800 text-sm font-medium px-2 py-0.5 rounded">採点</span>
-                                                </div>
-                                                <div />
-                                            </div>
-
-                                            <div className="flex flex-col items-start gap-2">
-                                                {criteria.map((criterion) => {
-                                                    const currentValue = scoreInputs[questionIdx]?.[responseId]?.[criterion.id] ?? null;
-                                                    return (
-                                                        <div key={criterion.id} className="flex items-start gap-2 w-full">
-                                                            <ButtonGroup variant="outlined" size="medium" disableElevation sx={{ minHeight: 0, minWidth: 0 }}>
-                                                                <Tooltip title="満たす" arrow>
-                                                                    <Button
-                                                                        color={currentValue === true ? 'success' : 'inherit'}
-                                                                        variant={currentValue === true ? 'contained' : 'outlined'}
-                                                                        onClick={() => handleScoreChange(questionIdx, responseId, criterion.id, true)}
-                                                                        sx={{
-                                                                            minWidth: 36,
-                                                                            minHeight: 36,
-                                                                            width: 36,
-                                                                            height: 36,
-                                                                            p: 0,
-                                                                            display: 'flex',
-                                                                            alignItems: 'center',
-                                                                            justifyContent: 'center',
-                                                                        }}
-                                                                    >
-                                                                        <CheckIcon fontSize="medium" style={{ margin: 0 }} />
-                                                                    </Button>
-                                                                </Tooltip>
-                                                                <Tooltip title="満たさない" arrow>
-                                                                    <Button
-                                                                        color={currentValue === false ? 'error' : 'inherit'}
-                                                                        variant={currentValue === false ? 'contained' : 'outlined'}
-                                                                        onClick={() => handleScoreChange(questionIdx, responseId, criterion.id, false)}
-                                                                        sx={{
-                                                                            minWidth: 36,
-                                                                            minHeight: 36,
-                                                                            width: 36,
-                                                                            height: 36,
-                                                                            p: 0,
-                                                                            display: 'flex',
-                                                                            alignItems: 'center',
-                                                                            justifyContent: 'center',
-                                                                        }}
-                                                                    >
-                                                                        <CloseIcon fontSize="medium" style={{ margin: 0 }} />
-                                                                    </Button>
-                                                                </Tooltip>
-                                                            </ButtonGroup>
-                                                            <span
-                                                                className="text-xs text-gray-600 ml-2 whitespace-pre-wrap break-words flex-1"
-                                                                title={criterion.description}
-                                                            >
-                                                                {criterion.description}
-                                                            </span>
-                                                        </div>
-                                                    );
-                                                })}
-                                                {/* コメント入力 */}
-                                                <div className="w-full mt-4">
-                                                    <label className="block text-xs font-medium text-gray-600 mb-1">コメント</label>
-                                                    <textarea
-                                                        className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                        rows={2}
-                                                        // uncontrolled: 初期値のみ反映、入力中は再レンダー不要
-                                                        defaultValue={commentsRef?.current?.[questionIdx]?.[responseId] || ''}
-                                                        key={`c-${questionIdx}-${responseId}-${commentsRef?.current?.[questionIdx]?.[responseId] || ''}`}
-                                                        placeholder="この回答へのフィードバックや指摘を入力..."
-                                                        onChange={(e) => {
-                                                            if (!commentsRef) return;
-                                                            const value = e.target.value;
-                                                            const cur = commentsRef.current;
-                                                            if (!cur[questionIdx]) cur[questionIdx] = {};
-                                                            cur[questionIdx][responseId] = value; // ミュータブル更新（再レンダーなし）
-                                                        }}
-                                                        onBlur={async (e) => {
-                                                            if (!workspace?.id) return;
-                                                            const value = e.target.value;
-                                                            try {
-                                                                await fetch(`/api/workspaces/${workspace.id}/comments`, {
-                                                                    method: 'PUT',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({
-                                                                        questionIndex: questionIdx,
-                                                                        responseId,
-                                                                        comment: value,
-                                                                    }),
-                                                                });
-                                                            } catch (err) {
-                                                                console.error('コメント保存に失敗', err);
-                                                            }
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
+                    {data.responses.map((response, index: number) => (
+                        <AnswerRow
+                            key={response.ID}
+                            index={index}
+                            response={response}
+                            questionIdx={currentQuestionIndex}
+                            criteria={scoringCriteria?.[currentQuestionIndex]?.criteria || []}
+                            scoreInputs={scoreInputs}
+                            onScoreChange={handleScoreChange}
+                            commentsRef={commentsRef}
+                            workspaceId={workspace?.id}
+                            renderAnswerContent={renderAnswerContent}
+                            questionKey={currentQuestion}
+                        />
+                    ))}
                 </div>
             </div>
         </div>
