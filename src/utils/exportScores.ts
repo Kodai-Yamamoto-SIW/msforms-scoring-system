@@ -69,7 +69,10 @@ export function buildStudentHtml(
             <section class="problem">
               <h3>問${qIndex + 1}</h3>
               <div class="question markdown-body">${displayTitleHtml}</div>
-              <div class="answer"><pre>${escapeHtml(answer)}</pre></div>
+              <div class="answer-card" aria-labelledby="ans-title-${qIndex}">
+                <div class="answer-card-header" id="ans-title-${qIndex}">受講者の回答</div>
+                <div class="answer-body"><pre>${escapeHtml(answer)}</pre></div>
+              </div>
               <div class="note muted">（この問題の採点基準は設定されていません）</div>
         ${commentHtml ? `<div class="comment"><strong>コメント:</strong><div class="comment-body markdown-body">${commentHtml}</div></div>` : ''}
             </section>`;
@@ -98,7 +101,10 @@ export function buildStudentHtml(
         <section class="problem">
           <h3>問${qIndex + 1}</h3>
           <div class="question markdown-body">${displayTitleHtml}</div>
-          <div class="answer"><pre>${escapeHtml(answer)}</pre></div>
+          <div class="answer-card" aria-labelledby="ans-title-${qIndex}">
+            <div class="answer-card-header" id="ans-title-${qIndex}">受講者の回答</div>
+            <div class="answer-body"><pre>${escapeHtml(answer)}</pre></div>
+          </div>
           <table class="criteria-table">
             <thead>
               <tr><th>採点基準</th><th>判定</th><th>得点</th></tr>
@@ -123,8 +129,10 @@ export function buildStudentHtml(
       .problem{ border:1px solid var(--line); border-radius:8px; padding:16px; margin:16px 0; }
       .problem h3{ margin:0 0 8px; color:var(--brand); }
   .question{ font-weight:600; margin-bottom:8px; }
-      .answer{ background:#f9fafb; border-left:4px solid var(--brand); padding:12px; border-radius:6px; overflow:auto; }
-      .answer pre{ margin:0; white-space:pre-wrap; word-break:break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:13px; }
+  .answer-card{ margin-top:8px; border:1px solid var(--line); background:#f0f9ff; border-left:4px solid #0284c7; border-radius:8px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+  .answer-card-header{ font-size:12px; font-weight:600; letter-spacing:.5px; color:#0369a1; text-transform:uppercase; padding:6px 10px; border-bottom:1px solid #e0f2fe; background:#e0f7ff; border-top-left-radius:8px; border-top-right-radius:8px; }
+  .answer-body{ padding:10px 12px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-word; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+  .answer-body pre{ margin:0; background:transparent; white-space:pre-wrap; word-break:break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; font-size:13px; line-height:1.4; }
       .criteria-table{ width:100%; border-collapse:collapse; margin-top:12px; }
       .criteria-table th, .criteria-table td{ border:1px solid var(--line); padding:8px; text-align:left; vertical-align:top; }
       .criteria-desc{ width:60%; }
