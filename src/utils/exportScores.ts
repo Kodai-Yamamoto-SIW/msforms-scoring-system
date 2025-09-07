@@ -35,6 +35,14 @@ function markdownToSafeHtml(src: string): string {
   }
 }
 
+// TrackTraining 用: 問題文内の ${ ... } を穴埋めプレースホルダへ変換
+function transformFillInBlanks(markdown: string, enabled: boolean): string {
+  if (!enabled || !markdown) return markdown;
+  let counter = 0;
+  // 直接HTMLを埋め込むとサニタイズでエスケープされるためトークン化
+  return markdown.replace(/\$\{[^}]*\}/g, () => `[[BLANK:${++counter}]]`);
+}
+
 // 単一受講者のHTML生成
 export function buildStudentHtml(
     workspace: ScoringWorkspace,
@@ -56,14 +64,20 @@ export function buildStudentHtml(
 
     let totalMax = 0;
     let totalScore = 0;
+    const isTrackTraining = !!(workspace.autoCorrectMask || data.autoCorrectMask);
 
-  const problemBlocks: string[] = data.questions.map((questionKey, qIndex) => {
+    const problemBlocks: string[] = data.questions.map((questionKey, qIndex) => {
         const displayTitle = titles[qIndex] || questionKey;
         const answer = String(response[questionKey] || '');
         const criteria = criteriaDef?.[qIndex]?.criteria || [];
-    const comment = workspace.comments?.[qIndex]?.[Number(response.ID)] || '';
-        const displayTitleHtml = markdownToSafeHtml(displayTitle);
+        const comment = workspace.comments?.[qIndex]?.[Number(response.ID)] || '';
+        const processedTitle = transformFillInBlanks(displayTitle, isTrackTraining);
+        let displayTitleHtml = markdownToSafeHtml(processedTitle);
+        if (isTrackTraining) {
+            displayTitleHtml = displayTitleHtml.replace(/\[\[BLANK:(\d+)\]\]/g, (_m, num) => `<span class="blank-slot" data-blank="${num}"><span class="blank-index">${num}</span></span>`);
+        }
         const commentHtml = comment ? markdownToSafeHtml(comment) : '';
+
         if (!criteria.length) {
             const subtotalText = '-';
             return `
@@ -93,7 +107,7 @@ export function buildStudentHtml(
             </section>`;
         }
 
-        // 小計を計算
+        // 小計計算
         let subtotal = 0;
         let subMax = 0;
         const rows = criteria.map((c) => {
@@ -112,7 +126,7 @@ export function buildStudentHtml(
         totalScore += subtotal;
         totalMax += subMax;
 
-  return `
+        return `
         <section class="problem">
           <details class="problem-details">
             <summary>
@@ -211,6 +225,15 @@ export function buildStudentHtml(
   .answer-pre{ margin:0; white-space:pre-wrap; word-break:break-word; font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace; font-size:13px; line-height:1.4; background:#ffffff; padding:10px 12px; border:1px solid #e2e8f0; border-radius:6px; }
   .section-block.comment-block .comment-body{ margin:0; }
   .not-set{ font-size:12px; margin-top:4px; }
+  /* 穴埋めプレースホルダ（TrackTraining）: コンパクト下線型 */
+  .blank-slot{ position:relative; display:inline-block; min-width:5.2em; margin:0 5px 0 6px; vertical-align:baseline; padding-top:0.54em; }
+  .blank-slot:after{ content:""; position:absolute; left:0; right:0; bottom:-0.48em; height:2px; background:linear-gradient(90deg,#2563eb,#60a5fa); border-radius:1px; }
+  .problem-block .blank-slot:after{ background:linear-gradient(90deg,#1d4ed8,#93c5fd); }
+  .blank-index{ position:absolute; left:0; top:-0.46em; font-size:8.2px; line-height:1; background:#1d4ed8; color:#fff; padding:1px 4px 2px; border-radius:999px; font-weight:600; font-family:ui-monospace,monospace; box-shadow:0 0 0 2px #ffffff; letter-spacing:.45px; }
+  .blank-slot:hover:after{ height:3px; }
+  .blank-slot:focus-within:after{ outline:2px solid #bfdbfe; }
+  /* インデックスが重なっても文字列との間隔を確保 */
+  .blank-slot + .blank-slot{ margin-left:10px; }
   /* 採点基準（省スペース & 低コントラスト化） */
   .criteria-table{ width:100%; border-collapse:separate; border-spacing:0; margin-top:10px; font-size:12.5px; line-height:1.35; background:#fff; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }
   .criteria-table thead th{ background:#f1f5f9; font-weight:600; padding:6px 8px; text-align:left; border-bottom:1px solid #e2e8f0; color:#334155; font-size:12px; }
