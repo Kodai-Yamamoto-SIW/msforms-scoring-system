@@ -6,10 +6,10 @@ export const dynamic = 'force-dynamic';
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = params;
+        const { id } = await context.params;
         const body: { questionIndex: number; responseId: number; criterionId: string; value: boolean | null } = await request.json();
 
         if (
