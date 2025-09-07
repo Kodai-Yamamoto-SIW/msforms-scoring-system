@@ -3,7 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-import ResponsePreview from "@/components/ResponsePreview";
+// 人ごと表示（採点対応）
+import PersonView from "@/components/PersonView";
 import QuestionView from "@/components/QuestionView";
 import ScoreSheetFill from "@/components/ScoreSheetFill";
 import { ParsedFormsData, ScoringWorkspace } from "@/types/forms";
@@ -152,7 +153,11 @@ export default function WorkspacePage() {
                                 commentsRef={commentsRef}
                             />
                         ) : (
-                            <ResponsePreview data={formsData} questionTitles={currentWorkspace?.questionTitles} />
+                            <PersonView
+                                data={formsData}
+                                workspace={currentWorkspace ?? undefined}
+                                commentsRef={commentsRef}
+                            />
                         )}
 
                         {openScoreSheet && currentWorkspace && (
