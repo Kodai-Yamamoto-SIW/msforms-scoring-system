@@ -6,6 +6,46 @@ import { validateDataCompatibility, detectDataDifferences } from '@/utils/dataVa
 
 const DATA_DIR = path.join(process.cwd(), 'data', 'workspaces');
 
+// ----------------------------
+// 低レベル: ファイルロック & 原子的書き込み
+// ----------------------------
+// 同一プロセス内の同時更新(高速連打や複数タブ)でJSONが壊れることがあったため、
+// 以下の対策を行う:
+// 1) withFileLock: 書き込み対象ファイルごとに逐次化
+// 2) atomicWriteJson: 一時ファイルへ完全書き込み後 rename で置換 (部分書き込み防止)
+// 3) バックアップ (直前世代) を .bak に保存 (復旧用)
+
+const fileLocks = new Map<string, Promise<unknown>>();
+
+const withFileLock = async <T>(filePath: string, fn: () => Promise<T>): Promise<T> => {
+    const prev = fileLocks.get(filePath) || Promise.resolve();
+    let result: T;
+    const exec = prev.then(fn).then(r => { result = r; });
+    // 直列実行チェーンを更新
+    fileLocks.set(filePath, exec.catch(() => {}));
+    try {
+        await exec; // 実行完了待ち
+        return result!;
+    } finally {
+        // 自分が末尾ならロック解放
+        if (fileLocks.get(filePath) === exec.catch(() => {})) {
+            fileLocks.delete(filePath);
+        }
+    }
+};
+
+const atomicWriteJson = async (filePath: string, data: unknown) => {
+    const tmpPath = filePath + '.tmp';
+    const bakPath = filePath + '.bak';
+    const json = JSON.stringify(data, null, 2);
+    // 既存ファイルをバックアップ (失敗しても続行)
+    if (fs.existsSync(filePath)) {
+        try { await fs.promises.copyFile(filePath, bakPath); } catch { /* ignore */ }
+    }
+    await fs.promises.writeFile(tmpPath, json, 'utf-8');
+    await fs.promises.rename(tmpPath, filePath); // rename は概ね原子的
+};
+
 // データディレクトリの初期化
 const ensureDataDir = () => {
     if (!fs.existsSync(DATA_DIR)) {
@@ -40,7 +80,9 @@ export const saveWorkspace = async (request: CreateWorkspaceRequest): Promise<Sc
     console.log('保存先ファイルパス:', filePath);
 
     try {
-        await fs.promises.writeFile(filePath, JSON.stringify(workspace, null, 2), 'utf-8');
+        await withFileLock(filePath, async () => {
+            await atomicWriteJson(filePath, workspace);
+        });
         console.log('ファイル保存完了');
 
         // 実際にファイルが作成されたか確認
@@ -130,32 +172,24 @@ export const deleteWorkspace = async (id: string): Promise<boolean> => {
 // ワークスペースを更新
 export const updateWorkspace = async (id: string, updates: { name?: string; description?: string }): Promise<ScoringWorkspace | null> => {
     ensureDataDir();
-
-    try {
-        const filePath = path.join(DATA_DIR, `${id}.json`);
-
-        // 既存のワークスペースを取得
-        const existingWorkspace = await getWorkspace(id);
-        if (!existingWorkspace) {
+    const filePath = path.join(DATA_DIR, `${id}.json`);
+    return withFileLock(filePath, async () => {
+        try {
+            const existingWorkspace = await getWorkspace(id);
+            if (!existingWorkspace) return null;
+            const updatedWorkspace: ScoringWorkspace = {
+                ...existingWorkspace,
+                ...updates,
+                updatedAt: new Date().toISOString(),
+            };
+            await atomicWriteJson(filePath, updatedWorkspace);
+            console.log('ワークスペース更新完了:', updatedWorkspace.id);
+            return updatedWorkspace;
+        } catch (error) {
+            console.error(`ワークスペース ${id} の更新に失敗:`, error);
             return null;
         }
-
-        // 更新されたワークスペースを作成
-        const updatedWorkspace: ScoringWorkspace = {
-            ...existingWorkspace,
-            ...updates,
-            updatedAt: new Date().toISOString(),
-        };
-
-        // ファイルに保存
-        await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
-        console.log('ワークスペース更新完了:', updatedWorkspace.id);
-
-        return updatedWorkspace;
-    } catch (error) {
-        console.error(`ワークスペース ${id} の更新に失敗:`, error);
-        return null;
-    }
+    });
 };
 
 // ワークスペースのデータを再インポート
@@ -246,7 +280,9 @@ export const reimportWorkspaceData = async (
 
         // ファイルに保存
         const filePath = path.join(DATA_DIR, `${id}.json`);
-        await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
+        await withFileLock(filePath, async () => {
+            await atomicWriteJson(filePath, updatedWorkspace);
+        });
         console.log('ワークスペースデータ再インポート完了:', id);
 
         return {
@@ -267,72 +303,53 @@ export const reimportWorkspaceData = async (
 // ワークスペースの採点基準を更新
 export const updateScoringCriteria = async (id: string, criteria: QuestionScoringCriteria[]): Promise<ScoringWorkspace | null> => {
     ensureDataDir();
+    const filePath = path.join(DATA_DIR, `${id}.json`);
+    return withFileLock(filePath, async () => {
+        try {
+            console.log('採点基準更新開始:', id);
+            const existingWorkspace = await getWorkspace(id);
+            if (!existingWorkspace) return null;
 
-    try {
-        console.log('採点基準更新開始:', id);
-
-        // 既存のワークスペースを取得
-        const existingWorkspace = await getWorkspace(id);
-        if (!existingWorkspace) {
-            return null;
-        }
-
-        // 既存のスコアをベースに、新規に追加された基準に初期値を反映する
-        const existingCriteria = existingWorkspace.scoringCriteria;
-        const scores: ScoringWorkspace['scores'] = existingWorkspace.scores ? { ...existingWorkspace.scores } : {};
-        const autoMask = existingWorkspace.formsData.autoCorrectMask || {};
-
-        // ヘルパー: 既存基準IDの集合を問題ごとに作成
-        const existingIdsByQ: Record<number, Set<string>> = {};
-        if (existingCriteria) {
-            for (const qc of existingCriteria) {
-                existingIdsByQ[qc.questionIndex] = new Set(qc.criteria.map(c => c.id));
+            const existingCriteria = existingWorkspace.scoringCriteria;
+            const scores: ScoringWorkspace['scores'] = existingWorkspace.scores ? { ...existingWorkspace.scores } : {};
+            const autoMask = existingWorkspace.formsData.autoCorrectMask || {};
+            const existingIdsByQ: Record<number, Set<string>> = {};
+            if (existingCriteria) {
+                for (const qc of existingCriteria) {
+                    existingIdsByQ[qc.questionIndex] = new Set(qc.criteria.map(c => c.id));
+                }
             }
-        }
-
-        // 新しい基準配列を走査し、各問題の新規基準に初期値を設定
-        for (const qc of criteria) {
-            const qIndex = qc.questionIndex;
-            const existingIds = existingIdsByQ[qIndex] || new Set<string>();
-            for (const c of qc.criteria) {
-                const isNew = !existingIds.has(c.id);
-                if (!isNew) continue; // 既存は変更しない
-
-                // 全回答者について初期値を設定
-                for (const resp of existingWorkspace.formsData.responses) {
-                    const rid = Number(resp.ID);
-                    // 自動正答マスクが真なら true を設定、そうでなければ（未設定のときのみ）nullのまま
-                    const isAutoCorrect = Boolean(autoMask[qIndex]?.[rid]);
-
-                    if (!scores![qIndex]) scores![qIndex] = {};
-                    if (!scores![qIndex]![rid]) scores![qIndex]![rid] = {};
-
-                    // まだ値が無い場合のみ初期値を入れる（ユーザーの採点は上書きしない）
-                    if (typeof scores![qIndex]![rid]![c.id] === 'undefined' || scores![qIndex]![rid]![c.id] === null) {
-                        scores![qIndex]![rid]![c.id] = isAutoCorrect ? true : null;
+            for (const qc of criteria) {
+                const qIndex = qc.questionIndex;
+                const existingIds = existingIdsByQ[qIndex] || new Set<string>();
+                for (const c of qc.criteria) {
+                    const isNew = !existingIds.has(c.id);
+                    if (!isNew) continue;
+                    for (const resp of existingWorkspace.formsData.responses) {
+                        const rid = Number(resp.ID);
+                        const isAutoCorrect = Boolean(autoMask[qIndex]?.[rid]);
+                        if (!scores![qIndex]) scores![qIndex] = {};
+                        if (!scores![qIndex]![rid]) scores![qIndex]![rid] = {};
+                        if (typeof scores![qIndex]![rid]![c.id] === 'undefined' || scores![qIndex]![rid]![c.id] === null) {
+                            scores![qIndex]![rid]![c.id] = isAutoCorrect ? true : null;
+                        }
                     }
                 }
             }
+            const updatedWorkspace: ScoringWorkspace = {
+                ...existingWorkspace,
+                scoringCriteria: criteria,
+                scores,
+                updatedAt: new Date().toISOString(),
+            };
+            await atomicWriteJson(filePath, updatedWorkspace);
+            console.log('採点基準更新完了:', id);
+            return updatedWorkspace;
+        } catch (error) {
+            console.error(`ワークスペース ${id} の採点基準更新に失敗:`, error);
+            return null;
         }
-
-        // 更新されたワークスペースを作成
-        const updatedWorkspace: ScoringWorkspace = {
-            ...existingWorkspace,
-            scoringCriteria: criteria,
-            scores,
-            updatedAt: new Date().toISOString(),
-        };
-
-        // ファイルに保存
-        const filePath = path.join(DATA_DIR, `${id}.json`);
-        await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
-        console.log('採点基準更新完了:', id);
-
-        return updatedWorkspace;
-    } catch (error) {
-        console.error(`ワークスペース ${id} の採点基準更新に失敗:`, error);
-        return null;
-    }
+    });
 };
 
 // 採点結果を更新（部分更新: 指定された経路のみ上書き）
@@ -341,34 +358,31 @@ export const upsertScores = async (
     updates: { questionIndex: number; responseId: number; criterionId: string; value: boolean | null }
 ): Promise<ScoringWorkspace | null> => {
     ensureDataDir();
-    try {
-        console.log('採点結果更新開始:', id, updates);
-        const existingWorkspace = await getWorkspace(id);
-        if (!existingWorkspace) return null;
-
-        const scores = existingWorkspace.scores || {};
-        const { questionIndex, responseId, criterionId, value } = updates;
-
-        // 深いコピーを作成して更新
-        const updatedScores: ScoringWorkspace['scores'] = { ...scores };
-        if (!updatedScores![questionIndex]) updatedScores![questionIndex] = {};
-        if (!updatedScores![questionIndex]![responseId]) updatedScores![questionIndex]![responseId] = {};
-        updatedScores![questionIndex]![responseId]![criterionId] = value;
-
-        const updatedWorkspace: ScoringWorkspace = {
-            ...existingWorkspace,
-            scores: updatedScores,
-            updatedAt: new Date().toISOString(),
-        };
-
-        const filePath = path.join(DATA_DIR, `${id}.json`);
-        await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
-        console.log('採点結果更新完了:', id);
-        return updatedWorkspace;
-    } catch (error) {
-        console.error('採点結果更新エラー:', error);
-        return null;
-    }
+    const filePath = path.join(DATA_DIR, `${id}.json`);
+    return withFileLock(filePath, async () => {
+        try {
+            console.log('採点結果更新開始:', id, updates);
+            const existingWorkspace = await getWorkspace(id);
+            if (!existingWorkspace) return null;
+            const scores = existingWorkspace.scores || {};
+            const { questionIndex, responseId, criterionId, value } = updates;
+            const updatedScores: ScoringWorkspace['scores'] = { ...scores };
+            if (!updatedScores![questionIndex]) updatedScores![questionIndex] = {};
+            if (!updatedScores![questionIndex]![responseId]) updatedScores![questionIndex]![responseId] = {};
+            updatedScores![questionIndex]![responseId]![criterionId] = value;
+            const updatedWorkspace: ScoringWorkspace = {
+                ...existingWorkspace,
+                scores: updatedScores,
+                updatedAt: new Date().toISOString(),
+            };
+            await atomicWriteJson(filePath, updatedWorkspace);
+            console.log('採点結果更新完了:', id);
+            return updatedWorkspace;
+        } catch (error) {
+            console.error('採点結果更新エラー:', error);
+            return null;
+        }
+    });
 };
 
 // コメントを更新（questionIndex, responseId 単位で1つの自由記述）
@@ -377,31 +391,30 @@ export const upsertComment = async (
     updates: { questionIndex: number; responseId: number; comment: string }
 ): Promise<ScoringWorkspace | null> => {
     ensureDataDir();
-    try {
-        console.log('コメント更新開始:', id, updates);
-        const existingWorkspace = await getWorkspace(id);
-        if (!existingWorkspace) return null;
-
-        const comments = existingWorkspace.comments || {};
-        const { questionIndex, responseId, comment } = updates;
-        const updatedComments: ScoringWorkspace['comments'] = { ...comments };
-        if (!updatedComments[questionIndex]) updatedComments[questionIndex] = {};
-        updatedComments[questionIndex]![responseId] = comment;
-
-        const updatedWorkspace: ScoringWorkspace = {
-            ...existingWorkspace,
-            comments: updatedComments,
-            updatedAt: new Date().toISOString(),
-        };
-
-        const filePath = path.join(DATA_DIR, `${id}.json`);
-        await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
-        console.log('コメント更新完了:', id);
-        return updatedWorkspace;
-    } catch (error) {
-        console.error('コメント更新エラー:', error);
-        return null;
-    }
+    const filePath = path.join(DATA_DIR, `${id}.json`);
+    return withFileLock(filePath, async () => {
+        try {
+            console.log('コメント更新開始:', id, updates);
+            const existingWorkspace = await getWorkspace(id);
+            if (!existingWorkspace) return null;
+            const comments = existingWorkspace.comments || {};
+            const { questionIndex, responseId, comment } = updates;
+            const updatedComments: ScoringWorkspace['comments'] = { ...comments };
+            if (!updatedComments[questionIndex]) updatedComments[questionIndex] = {};
+            updatedComments[questionIndex]![responseId] = comment;
+            const updatedWorkspace: ScoringWorkspace = {
+                ...existingWorkspace,
+                comments: updatedComments,
+                updatedAt: new Date().toISOString(),
+            };
+            await atomicWriteJson(filePath, updatedWorkspace);
+            console.log('コメント更新完了:', id);
+            return updatedWorkspace;
+        } catch (error) {
+            console.error('コメント更新エラー:', error);
+            return null;
+        }
+    });
 };
 
 // ワークスペースIDを生成
@@ -414,25 +427,23 @@ const generateWorkspaceId = (): string => {
 // 表示用の問題タイトルを更新（配列長は questions と一致させる）
 export const updateQuestionTitles = async (id: string, titles: string[]): Promise<ScoringWorkspace | null> => {
     ensureDataDir();
-    try {
-        const existingWorkspace = await getWorkspace(id);
-        if (!existingWorkspace) return null;
-
-        const questionCount = existingWorkspace.formsData.questions.length;
-        // タイトル配列を正規化（不足は空文字、過剰は切り詰め）
-        const normalized = Array.from({ length: questionCount }, (_, i) => (titles[i] ?? ''));
-
-        const updatedWorkspace: ScoringWorkspace = {
-            ...existingWorkspace,
-            questionTitles: normalized,
-            updatedAt: new Date().toISOString(),
-        };
-
-        const filePath = path.join(DATA_DIR, `${id}.json`);
-        await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
-        return updatedWorkspace;
-    } catch (error) {
-        console.error('質問タイトル更新エラー:', error);
-        return null;
-    }
+    const filePath = path.join(DATA_DIR, `${id}.json`);
+    return withFileLock(filePath, async () => {
+        try {
+            const existingWorkspace = await getWorkspace(id);
+            if (!existingWorkspace) return null;
+            const questionCount = existingWorkspace.formsData.questions.length;
+            const normalized = Array.from({ length: questionCount }, (_, i) => (titles[i] ?? ''));
+            const updatedWorkspace: ScoringWorkspace = {
+                ...existingWorkspace,
+                questionTitles: normalized,
+                updatedAt: new Date().toISOString(),
+            };
+            await atomicWriteJson(filePath, updatedWorkspace);
+            return updatedWorkspace;
+        } catch (error) {
+            console.error('質問タイトル更新エラー:', error);
+            return null;
+        }
+    });
 };
