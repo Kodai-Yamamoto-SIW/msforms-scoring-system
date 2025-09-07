@@ -90,7 +90,8 @@ const AnswerRow = memo(function AnswerRow ({
                                     className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                                     rows={2}
                                     defaultValue={commentsRef?.current?.[questionIdx]?.[responseId] || ''}
-                                    key={`c-${questionIdx}-${responseId}-${commentsRef?.current?.[questionIdx]?.[responseId] || ''}`}
+                                    /* 質問切替時のみ再マウントして defaultValue を反映（コメント入力中は保持）*/
+                                    key={`c-${questionIdx}-${responseId}`}
                                     placeholder="この回答へのフィードバックや指摘を入力..."
                                     onChange={(e) => {
                                         if (!commentsRef) return;
@@ -129,6 +130,9 @@ const AnswerRow = memo(function AnswerRow ({
     const pid = Number(prev.response.ID);
     const nid = Number(next.response.ID);
     if (pid !== nid) return false;
+    // 質問が切り替わった場合は再レンダー（表示する回答内容/コメント初期値が変化するため）
+    if (prev.questionIdx !== next.questionIdx) return false;
+    if (prev.questionKey !== next.questionKey) return false;
     const prevScore = prev.scoreInputs[prev.questionIdx]?.[pid];
     const nextScore = next.scoreInputs[next.questionIdx]?.[nid];
     if (prevScore !== nextScore) return false; // 参照変化時のみ再レンダー
