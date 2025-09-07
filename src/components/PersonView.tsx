@@ -123,6 +123,17 @@ export default function PersonView({ data, workspace, commentsRef }: PersonViewP
     const displayTitles = workspace?.questionTitles && workspace.questionTitles.length === data.questions.length ? workspace.questionTitles : undefined;
     const responseId = Number(currentResponse.ID);
 
+    // 合計点 / 満点計算（人ごと）
+    const totalMaxScore = (scoringCriteria || []).reduce((sum, qc) => sum + qc.criteria.reduce((s, c) => s + c.maxScore, 0), 0);
+    const currentTotalScore = (scoringCriteria || []).reduce((sum, qc) => {
+        const perQuestion = qc.criteria.reduce((s, c) => {
+            const v = scoreInputs[qc.questionIndex]?.[responseId]?.[c.id];
+            return s + (v === true ? c.maxScore : 0);
+        }, 0);
+        return sum + perQuestion;
+    }, 0);
+    const percent = totalMaxScore > 0 ? Math.round((currentTotalScore / totalMaxScore) * 100) : 0;
+
     return (
         <div className="w-full max-w-6xl mx-auto p-4">
             <div className="sticky top-0 bg-white border rounded-lg shadow-sm p-4 mb-6 z-10">
@@ -134,6 +145,18 @@ export default function PersonView({ data, workspace, commentsRef }: PersonViewP
                             <div className="text-sm text-gray-500">{currentIndex + 1} / {data.totalResponses}</div>
                             <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden"><div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${((currentIndex + 1) / data.totalResponses) * 100}%` }} /></div>
                         </div>
+                        {totalMaxScore > 0 ? (
+                            <div className="flex items-center gap-2 ml-2">
+                                <span className="text-sm font-medium text-gray-700">
+                                    合計: <span className="text-blue-600">{currentTotalScore}</span> / {totalMaxScore} 点
+                                </span>
+                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                    {percent}%
+                                </span>
+                            </div>
+                        ) : (
+                            <span className="text-xs text-gray-400 ml-2">採点基準未設定</span>
+                        )}
                         <button onClick={() => setShowBasicInfo(!showBasicInfo)} className="text-sm text-blue-600 hover:text-blue-800 underline">{showBasicInfo ? '詳細を隠す' : '詳細を表示'}</button>
                     </div>
                     <div className="flex gap-3">
