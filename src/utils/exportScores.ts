@@ -76,15 +76,18 @@ export function buildStudentHtml(
                     <span class="toggle-indicator" aria-hidden="true"></span>
                   </div>
                 </summary>
-                <div class="problem-body">
+                <div class="problem-body blocks">
                   <h3 class="visually-hidden">問${qIndex + 1}</h3>
-                  <div class="question markdown-body">${displayTitleHtml}</div>
-                  <div class="answer-card" aria-labelledby="ans-title-${qIndex}">
-                    <div class="answer-card-header" id="ans-title-${qIndex}">受講者の回答</div>
-                    <div class="answer-body"><pre>${escapeHtml(answer)}</pre></div>
+                  <div class="section-block problem-block">
+                    <div class="section-label">問題文</div>
+                    <div class="markdown-body question-text">${displayTitleHtml}</div>
                   </div>
-                  <div class="note muted">（この問題の採点基準は設定されていません）</div>
-                  ${commentHtml ? `<div class="comment"><strong>コメント:</strong><div class="comment-body markdown-body">${commentHtml}</div></div>` : ''}
+                  <div class="section-block answer-block" aria-labelledby="ans-title-${qIndex}">
+                    <div class="section-label" id="ans-title-${qIndex}">受講者の回答</div>
+                    <pre class="answer-pre">${escapeHtml(answer)}</pre>
+                  </div>
+                  ${commentHtml ? `<div class="section-block comment-block has-comment"><div class="section-label">コメント</div><div class="markdown-body comment-body">${commentHtml}</div></div>` : ''}
+                  <div class="note muted not-set">（この問題の採点基準は設定されていません）</div>
                 </div>
               </details>
             </section>`;
@@ -119,23 +122,29 @@ export function buildStudentHtml(
                 <span class="toggle-indicator" aria-hidden="true"></span>
               </div>
             </summary>
-            <div class="problem-body">
+            <div class="problem-body blocks">
               <h3 class="visually-hidden">問${qIndex + 1}</h3>
-              <div class="question markdown-body">${displayTitleHtml}</div>
-              <div class="answer-card" aria-labelledby="ans-title-${qIndex}">
-                <div class="answer-card-header" id="ans-title-${qIndex}">受講者の回答</div>
-                <div class="answer-body"><pre>${escapeHtml(answer)}</pre></div>
+              <div class="section-block problem-block">
+                <div class="section-label">問題文</div>
+                <div class="markdown-body question-text">${displayTitleHtml}</div>
               </div>
-              <table class="criteria-table">
-                <thead>
-                  <tr><th>採点基準</th><th>判定</th><th>得点</th></tr>
-                </thead>
-                <tbody>
-                  ${rows}
-                </tbody>
-              </table>
-              <div class="subtotal">小計: <strong>${subtotal}</strong> / ${subMax}</div>
-              ${commentHtml ? `<div class="comment"><strong>コメント:</strong><div class="comment-body markdown-body">${commentHtml}</div></div>` : ''}
+              <div class="section-block answer-block" aria-labelledby="ans-title-${qIndex}">
+                <div class="section-label" id="ans-title-${qIndex}">受講者の回答</div>
+                <pre class="answer-pre">${escapeHtml(answer)}</pre>
+              </div>
+              <div class="section-block criteria-block">
+                <div class="section-label">採点基準</div>
+                <table class="criteria-table">
+                  <thead>
+                    <tr><th>基準</th><th>判定</th><th>得点</th></tr>
+                  </thead>
+                  <tbody>
+                    ${rows}
+                  </tbody>
+                </table>
+                <div class="subtotal">小計: <strong>${subtotal}</strong> / ${subMax}</div>
+              </div>
+              ${commentHtml ? `<div class="section-block comment-block has-comment"><div class="section-label">コメント</div><div class="markdown-body comment-body">${commentHtml}</div></div>` : ''}
             </div>
           </details>
         </section>`;
@@ -181,10 +190,27 @@ export function buildStudentHtml(
   .problem h3{ margin:0 0 8px; color:var(--brand); }
   .question{ font-weight:600; margin-bottom:8px; }
   .visually-hidden{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
-  .answer-card{ margin-top:8px; border:1px solid var(--line); background:#f0f9ff; border-left:4px solid #0284c7; border-radius:8px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
-  .answer-card-header{ font-size:12px; font-weight:600; letter-spacing:.5px; color:#0369a1; text-transform:uppercase; padding:6px 10px; border-bottom:1px solid #e0f2fe; background:#e0f7ff; border-top-left-radius:8px; border-top-right-radius:8px; }
-  .answer-body{ padding:10px 12px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-word; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
-  .answer-body pre{ margin:0; background:transparent; white-space:pre-wrap; word-break:break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; font-size:13px; line-height:1.4; }
+  /* セクションブロック共通 */
+  .blocks{ display:flex; flex-direction:column; gap:14px; }
+  .section-block{ border:1px solid #e2e8f0; border-radius:10px; background:#ffffff; padding:14px 16px 16px; position:relative; }
+  .section-block.problem-block{ border-left:5px solid #2563eb; }
+  .section-block.answer-block{ border-left:5px solid #0891b2; background:#f0f9ff; }
+  .section-block.criteria-block{ border-left:5px solid #475569; }
+  .section-block.comment-block{ border-left:5px solid #ea580c; background:linear-gradient(135deg,#fff7ed,#fffbeb); border:1px solid #fdba74; box-shadow:0 2px 6px -1px rgba(234,88,12,0.25),0 0 0 1px rgba(251,191,36,0.35) inset; }
+  .section-block.comment-block .section-label{ color:#9a3412; }
+  .section-block.comment-block .section-label:before{ content:"💬"; font-size:14px; }
+  .section-block.comment-block.has-comment:after{ content:""; position:absolute; top:10px; right:12px; width:10px; height:10px; background:#ef4444; border-radius:50%; box-shadow:0 0 0 0 rgba(239,68,68,.6); animation:comment-pulse 1.8s ease-in-out infinite; }
+  @keyframes comment-pulse { 0%{ transform:scale(.85); box-shadow:0 0 0 0 rgba(239,68,68,.55);} 60%{ transform:scale(1); box-shadow:0 0 0 10px rgba(239,68,68,0);} 100%{ box-shadow:0 0 0 0 rgba(239,68,68,0);} }
+  .section-block.comment-block .comment-body{ font-size:13px; line-height:1.55; }
+  .section-label{ font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#475569; margin-bottom:6px; display:inline-flex; align-items:center; gap:4px; }
+  .section-block.answer-block .section-label{ color:#0369a1; }
+  .section-block.problem-block .section-label{ color:#1d4ed8; }
+  .section-block.criteria-block .section-label{ color:#334155; }
+  .section-block.comment-block .section-label{ color:#b45309; }
+  .question-text{ font-weight:600; }
+  .answer-pre{ margin:0; white-space:pre-wrap; word-break:break-word; font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace; font-size:13px; line-height:1.4; background:#ffffff; padding:10px 12px; border:1px solid #e2e8f0; border-radius:6px; }
+  .section-block.comment-block .comment-body{ margin:0; }
+  .not-set{ font-size:12px; margin-top:4px; }
   /* 採点基準（省スペース & 低コントラスト化） */
   .criteria-table{ width:100%; border-collapse:separate; border-spacing:0; margin-top:10px; font-size:12.5px; line-height:1.35; background:#fff; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }
   .criteria-table thead th{ background:#f1f5f9; font-weight:600; padding:6px 8px; text-align:left; border-bottom:1px solid #e2e8f0; color:#334155; font-size:12px; }
