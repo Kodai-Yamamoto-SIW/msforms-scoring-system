@@ -87,11 +87,25 @@ const AnswerRow = memo(function AnswerRow ({
                                 <label className="block text-xs font-medium text-gray-600 mb-1">コメント</label>
                                 <textarea
                                     className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                    rows={2}
+                                    rows={1}
+                                    style={{ overflow: 'hidden', resize: 'none' }}
                                     defaultValue={commentsRef?.current?.[questionIdx]?.[responseId] || ''}
                                     /* 質問切替時のみ再マウントして defaultValue を反映（コメント入力中は保持）*/
                                     key={`c-${questionIdx}-${responseId}`}
                                     placeholder="この回答へのフィードバックや指摘を入力..."
+                                    ref={(el) => {
+                                        if (el) {
+                                            // 初期マウント時に高さ調整
+                                            el.style.height = 'auto';
+                                            el.style.height = `${el.scrollHeight}px`;
+                                        }
+                                    }}
+                                    onInput={(e) => {
+                                        const ta = e.currentTarget;
+                                        // 入力ごとに高さ再計算
+                                        ta.style.height = 'auto';
+                                        ta.style.height = `${ta.scrollHeight}px`;
+                                    }}
                                     onChange={(e) => {
                                         if (!commentsRef) return;
                                         const value = e.target.value;
