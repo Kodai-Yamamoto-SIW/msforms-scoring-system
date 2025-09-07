@@ -65,16 +65,28 @@ export function buildStudentHtml(
         const displayTitleHtml = markdownToSafeHtml(displayTitle);
         const commentHtml = comment ? markdownToSafeHtml(comment) : '';
         if (!criteria.length) {
+            const subtotalText = '-';
             return `
             <section class="problem">
-              <h3>問${qIndex + 1}</h3>
-              <div class="question markdown-body">${displayTitleHtml}</div>
-              <div class="answer-card" aria-labelledby="ans-title-${qIndex}">
-                <div class="answer-card-header" id="ans-title-${qIndex}">受講者の回答</div>
-                <div class="answer-body"><pre>${escapeHtml(answer)}</pre></div>
-              </div>
-              <div class="note muted">（この問題の採点基準は設定されていません）</div>
-        ${commentHtml ? `<div class="comment"><strong>コメント:</strong><div class="comment-body markdown-body">${commentHtml}</div></div>` : ''}
+              <details class="problem-details">
+                <summary>
+                  <div class="problem-summary-bar">
+                    <span class="problem-label">問${qIndex + 1}</span>
+                    <span class="problem-subtotal">小計: <strong>${subtotalText}</strong></span>
+                    <span class="toggle-indicator" aria-hidden="true"></span>
+                  </div>
+                </summary>
+                <div class="problem-body">
+                  <h3 class="visually-hidden">問${qIndex + 1}</h3>
+                  <div class="question markdown-body">${displayTitleHtml}</div>
+                  <div class="answer-card" aria-labelledby="ans-title-${qIndex}">
+                    <div class="answer-card-header" id="ans-title-${qIndex}">受講者の回答</div>
+                    <div class="answer-body"><pre>${escapeHtml(answer)}</pre></div>
+                  </div>
+                  <div class="note muted">（この問題の採点基準は設定されていません）</div>
+                  ${commentHtml ? `<div class="comment"><strong>コメント:</strong><div class="comment-body markdown-body">${commentHtml}</div></div>` : ''}
+                </div>
+              </details>
             </section>`;
         }
 
@@ -99,22 +111,33 @@ export function buildStudentHtml(
 
   return `
         <section class="problem">
-          <h3>問${qIndex + 1}</h3>
-          <div class="question markdown-body">${displayTitleHtml}</div>
-          <div class="answer-card" aria-labelledby="ans-title-${qIndex}">
-            <div class="answer-card-header" id="ans-title-${qIndex}">受講者の回答</div>
-            <div class="answer-body"><pre>${escapeHtml(answer)}</pre></div>
-          </div>
-          <table class="criteria-table">
-            <thead>
-              <tr><th>採点基準</th><th>判定</th><th>得点</th></tr>
-            </thead>
-            <tbody>
-              ${rows}
-            </tbody>
-          </table>
-          <div class="subtotal">小計: <strong>${subtotal}</strong> / ${subMax}</div>
-          ${commentHtml ? `<div class="comment"><strong>コメント:</strong><div class="comment-body markdown-body">${commentHtml}</div></div>` : ''}
+          <details class="problem-details">
+            <summary>
+              <div class="problem-summary-bar">
+                <span class="problem-label">問${qIndex + 1}</span>
+                <span class="problem-subtotal">小計: <strong>${subtotal}</strong> / ${subMax}</span>
+                <span class="toggle-indicator" aria-hidden="true"></span>
+              </div>
+            </summary>
+            <div class="problem-body">
+              <h3 class="visually-hidden">問${qIndex + 1}</h3>
+              <div class="question markdown-body">${displayTitleHtml}</div>
+              <div class="answer-card" aria-labelledby="ans-title-${qIndex}">
+                <div class="answer-card-header" id="ans-title-${qIndex}">受講者の回答</div>
+                <div class="answer-body"><pre>${escapeHtml(answer)}</pre></div>
+              </div>
+              <table class="criteria-table">
+                <thead>
+                  <tr><th>採点基準</th><th>判定</th><th>得点</th></tr>
+                </thead>
+                <tbody>
+                  ${rows}
+                </tbody>
+              </table>
+              <div class="subtotal">小計: <strong>${subtotal}</strong> / ${subMax}</div>
+              ${commentHtml ? `<div class="comment"><strong>コメント:</strong><div class="comment-body markdown-body">${commentHtml}</div></div>` : ''}
+            </div>
+          </details>
         </section>`;
     });
 
@@ -141,9 +164,23 @@ export function buildStudentHtml(
         .score-sep{ font-size:26px; }
         .total-score-percent{ font-size:16px; }
       }
-      .problem{ border:1px solid var(--line); border-radius:8px; padding:16px; margin:16px 0; }
-      .problem h3{ margin:0 0 8px; color:var(--brand); }
+  .problem{ margin:12px 0; }
+  .problem-details{ border:1px solid var(--line); border-radius:10px; background:#fff; overflow:hidden; }
+  .problem-details[open]{ box-shadow:0 4px 10px -2px rgba(0,0,0,.05); }
+  .problem-details summary{ cursor:pointer; list-style:none; }
+  .problem-details summary::-webkit-details-marker{ display:none; }
+  .problem-summary-bar{ display:flex; align-items:center; gap:16px; padding:10px 16px; background:#f1f5f9; position:relative; }
+  .problem-details[open] .problem-summary-bar{ background:#e2e8f0; }
+  .problem-label{ font-size:15px; font-weight:600; color:#1e293b; }
+  .problem-subtotal{ margin-left:auto; font-size:14px; font-weight:500; color:#0f172a; }
+  .toggle-indicator{ width:14px; height:14px; margin-left:8px; position:relative; }
+  .toggle-indicator:before, .toggle-indicator:after{ content:""; position:absolute; inset:0; margin:auto; width:10px; height:2px; background:#334155; border-radius:2px; transition:.25s; }
+  .toggle-indicator:after{ transform:rotate(90deg); }
+  .problem-details[open] .toggle-indicator:after{ transform:rotate(0deg); opacity:0; }
+  .problem-body{ padding:16px 20px 20px; border-top:1px solid var(--line); }
+  .problem h3{ margin:0 0 8px; color:var(--brand); }
   .question{ font-weight:600; margin-bottom:8px; }
+  .visually-hidden{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
   .answer-card{ margin-top:8px; border:1px solid var(--line); background:#f0f9ff; border-left:4px solid #0284c7; border-radius:8px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
   .answer-card-header{ font-size:12px; font-weight:600; letter-spacing:.5px; color:#0369a1; text-transform:uppercase; padding:6px 10px; border-bottom:1px solid #e0f2fe; background:#e0f7ff; border-top-left-radius:8px; border-top-right-radius:8px; }
   .answer-body{ padding:10px 12px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-word; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
