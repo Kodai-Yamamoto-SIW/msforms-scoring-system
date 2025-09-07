@@ -126,6 +126,21 @@ export function buildStudentHtml(
       h1{ font-size:28px; margin:0 0 4px; }
       .summary{ color:var(--muted); margin-bottom:20px; }
       .total{ background:#f8fafc; border:1px solid var(--line); padding:12px 16px; border-radius:8px; margin:16px 0 24px; }
+      .total-score{ position:relative; border:1px solid var(--line); background:linear-gradient(135deg,#f0f9ff,#fff); padding:20px 24px 18px; border-radius:16px; margin:24px 0 32px; box-shadow:0 4px 10px -2px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.04); display:flex; align-items:center; gap:32px; flex-wrap:wrap; }
+      .total-score:after{ content:""; position:absolute; inset:0; pointer-events:none; border-radius:16px; background:radial-gradient(circle at 85% 20%, rgba(56,189,248,0.18), transparent 60%); }
+      .total-score-label{ font-size:14px; letter-spacing:.15em; font-weight:700; color:#0369a1; text-transform:uppercase; }
+      .total-score-main{ display:flex; align-items:baseline; gap:10px; font-weight:600; }
+      .score-value{ font-size:56px; font-weight:700; line-height:1; color:#0f172a; font-variant-numeric:tabular-nums; }
+      .score-sep{ font-size:32px; color:#334155; opacity:.6; }
+      .score-max{ font-size:32px; font-weight:500; color:#475569; font-variant-numeric:tabular-nums; }
+      .total-score-percent{ margin-left:auto; font-size:20px; font-weight:600; color:#0d9488; background:#ccfbf1; padding:6px 14px; border-radius:999px; box-shadow:0 1px 2px rgba(0,0,0,.08) inset; }
+      @media (max-width:640px){
+        .total-score{ gap:18px; padding:18px 18px 16px; }
+        .score-value{ font-size:42px; }
+        .score-max{ font-size:26px; }
+        .score-sep{ font-size:26px; }
+        .total-score-percent{ font-size:16px; }
+      }
       .problem{ border:1px solid var(--line); border-radius:8px; padding:16px; margin:16px 0; }
       .problem h3{ margin:0 0 8px; color:var(--brand); }
   .question{ font-weight:600; margin-bottom:8px; }
@@ -162,6 +177,7 @@ export function buildStudentHtml(
       .markdown-body a:hover{ text-decoration:underline; }
     `;
 
+    const percent = totalMax > 0 ? ((totalScore / totalMax) * 100).toFixed(1) : '--';
     const html = `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -176,7 +192,15 @@ export function buildStudentHtml(
       <h1>${escapeHtml(projectName)} 採点結果</h1>
       <span class="badge">${escapeHtml(studentId)} ${escapeHtml(name)}</span>
     </div>
-    <div class="summary">合計: <strong>${totalScore}</strong> / ${totalMax}</div>
+    <div class="total-score" role="group" aria-label="総合得点">
+      <div class="total-score-label">総合得点</div>
+      <div class="total-score-main">
+        <span class="score-value">${totalScore}</span>
+        <span class="score-sep">/</span>
+        <span class="score-max">${totalMax}</span>
+      </div>
+      <div class="total-score-percent">${percent === '--' ? '' : percent + '% 達成'}</div>
+    </div>
     <div>
       ${problemBlocks.join('\n')}
     </div>
