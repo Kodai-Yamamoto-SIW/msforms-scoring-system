@@ -3,7 +3,6 @@
 import React, { useState, useEffect, MutableRefObject, memo } from 'react';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Button from '@mui/material/Button';
-import Tooltip from '@mui/material/Tooltip';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -154,44 +153,42 @@ const ScoreCell = memo(function ScoreCell({ criterionId, questionIdx, responseId
     return (
         <div className="flex items-start gap-2 w-full">
             <ButtonGroup variant="outlined" size="medium" disableElevation sx={{ minHeight: 0, minWidth: 0 }}>
-                <Tooltip title="満たす" arrow>
-                    <Button
-                        color={value === true ? 'success' : 'inherit'}
-                        variant={value === true ? 'contained' : 'outlined'}
-                        onClick={() => onScoreChange(questionIdx, responseId, criterionId, true)}
-                        sx={{
-                            minWidth: 36,
-                            minHeight: 36,
-                            width: 36,
-                            height: 36,
-                            p: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <CheckIcon fontSize="medium" style={{ margin: 0 }} />
-                    </Button>
-                </Tooltip>
-                <Tooltip title="満たさない" arrow>
-                    <Button
-                        color={value === false ? 'error' : 'inherit'}
-                        variant={value === false ? 'contained' : 'outlined'}
-                        onClick={() => onScoreChange(questionIdx, responseId, criterionId, false)}
-                        sx={{
-                            minWidth: 36,
-                            minHeight: 36,
-                            width: 36,
-                            height: 36,
-                            p: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <CloseIcon fontSize="medium" style={{ margin: 0 }} />
-                    </Button>
-                </Tooltip>
+                <Button
+                    color={value === true ? 'success' : 'inherit'}
+                    aria-label="基準を満たす"
+                    variant={value === true ? 'contained' : 'outlined'}
+                    onClick={() => onScoreChange(questionIdx, responseId, criterionId, true)}
+                    sx={{
+                        minWidth: 36,
+                        minHeight: 36,
+                        width: 36,
+                        height: 36,
+                        p: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <CheckIcon fontSize="medium" style={{ margin: 0 }} />
+                </Button>
+                <Button
+                    color={value === false ? 'error' : 'inherit'}
+                    aria-label="基準を満たさない"
+                    variant={value === false ? 'contained' : 'outlined'}
+                    onClick={() => onScoreChange(questionIdx, responseId, criterionId, false)}
+                    sx={{
+                        minWidth: 36,
+                        minHeight: 36,
+                        width: 36,
+                        height: 36,
+                        p: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <CloseIcon fontSize="medium" style={{ margin: 0 }} />
+                </Button>
             </ButtonGroup>
             <span
                 className="text-xs text-gray-600 ml-2 whitespace-pre-wrap break-words flex-1"
