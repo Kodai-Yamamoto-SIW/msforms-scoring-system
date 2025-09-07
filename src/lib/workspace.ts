@@ -371,6 +371,39 @@ export const upsertScores = async (
     }
 };
 
+// コメントを更新（questionIndex, responseId 単位で1つの自由記述）
+export const upsertComment = async (
+    id: string,
+    updates: { questionIndex: number; responseId: number; comment: string }
+): Promise<ScoringWorkspace | null> => {
+    ensureDataDir();
+    try {
+        console.log('コメント更新開始:', id, updates);
+        const existingWorkspace = await getWorkspace(id);
+        if (!existingWorkspace) return null;
+
+        const comments = existingWorkspace.comments || {};
+        const { questionIndex, responseId, comment } = updates;
+        const updatedComments: ScoringWorkspace['comments'] = { ...comments };
+        if (!updatedComments[questionIndex]) updatedComments[questionIndex] = {};
+        updatedComments[questionIndex]![responseId] = comment;
+
+        const updatedWorkspace: ScoringWorkspace = {
+            ...existingWorkspace,
+            comments: updatedComments,
+            updatedAt: new Date().toISOString(),
+        };
+
+        const filePath = path.join(DATA_DIR, `${id}.json`);
+        await fs.promises.writeFile(filePath, JSON.stringify(updatedWorkspace, null, 2), 'utf-8');
+        console.log('コメント更新完了:', id);
+        return updatedWorkspace;
+    } catch (error) {
+        console.error('コメント更新エラー:', error);
+        return null;
+    }
+};
+
 // ワークスペースIDを生成
 const generateWorkspaceId = (): string => {
     const timestamp = Date.now().toString(36);

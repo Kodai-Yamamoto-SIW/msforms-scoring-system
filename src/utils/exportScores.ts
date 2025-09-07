@@ -37,10 +37,11 @@ export function buildStudentHtml(
     let totalMax = 0;
     let totalScore = 0;
 
-    const problemBlocks: string[] = data.questions.map((questionKey, qIndex) => {
+  const problemBlocks: string[] = data.questions.map((questionKey, qIndex) => {
         const displayTitle = titles[qIndex] || questionKey;
         const answer = String(response[questionKey] || '');
         const criteria = criteriaDef?.[qIndex]?.criteria || [];
+    const comment = workspace.comments?.[qIndex]?.[Number(response.ID)] || '';
         if (!criteria.length) {
             return `
             <section class="problem">
@@ -48,6 +49,7 @@ export function buildStudentHtml(
               <div class="question">${escapeHtml(displayTitle)}</div>
               <div class="answer"><pre>${escapeHtml(answer)}</pre></div>
               <div class="note muted">（この問題の採点基準は設定されていません）</div>
+        ${comment ? `<div class="comment"><strong>コメント:</strong><div class="comment-body">${escapeHtml(comment)}</div></div>` : ''}
             </section>`;
         }
 
@@ -70,7 +72,7 @@ export function buildStudentHtml(
         totalScore += subtotal;
         totalMax += subMax;
 
-        return `
+  return `
         <section class="problem">
           <h3>問${qIndex + 1}</h3>
           <div class="question">${escapeHtml(displayTitle)}</div>
@@ -84,6 +86,7 @@ export function buildStudentHtml(
             </tbody>
           </table>
           <div class="subtotal">小計: <strong>${subtotal}</strong> / ${subMax}</div>
+          ${comment ? `<div class="comment"><strong>コメント:</strong><div class="comment-body">${escapeHtml(comment)}</div></div>` : ''}
         </section>`;
     });
 
@@ -105,7 +108,9 @@ export function buildStudentHtml(
       .criteria-desc{ width:60%; }
       .criteria-mark{ width:10%; text-align:center; }
       .criteria-score{ width:30%; text-align:right; }
-      .subtotal{ text-align:right; margin-top:8px; font-weight:600; }
+  .subtotal{ text-align:right; margin-top:8px; font-weight:600; }
+  .comment{ margin-top:12px; background:#fffbeb; border:1px solid #fcd34d; padding:10px 12px; border-radius:6px; }
+  .comment-body{ margin-top:4px; white-space:pre-wrap; line-height:1.5; }
       .muted{ color:var(--muted); }
       .note{ margin-top:8px; }
       .header{ display:flex; gap:16px; align-items:baseline; flex-wrap:wrap; }

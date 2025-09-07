@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import ResponsePreview from "@/components/ResponsePreview";
@@ -30,6 +30,9 @@ export default function WorkspacePage() {
                 });
         }
     }, [id]);
+
+    // 最新コメントを保持（再レンダー不要のためref）
+    const commentsRef = useRef<Record<number, Record<number, string>>>({});
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
@@ -70,7 +73,11 @@ export default function WorkspacePage() {
                             <button
                                 onClick={() => {
                                     if (!currentWorkspace) return;
-                                    const ws = currentWorkspace;
+                                    // 最新コメント(ref) を反映したワークスペースを組み立て（state更新は不要）
+                                    const ws: ScoringWorkspace = {
+                                        ...currentWorkspace,
+                                        comments: ({ ...currentWorkspace.comments, ...commentsRef.current })
+                                    } as ScoringWorkspace;
                                     const data = ws.formsData;
                                     // 未設定の最初の問題を探索
                                     let firstNoCriteria = -1;
@@ -138,7 +145,12 @@ export default function WorkspacePage() {
                             </div>
                         </div>
                         {viewMode === "question" ? (
-                            <QuestionView data={formsData} workspace={currentWorkspace ?? undefined} initialIndex={questionFocusIndex} />
+                            <QuestionView
+                                data={formsData}
+                                workspace={currentWorkspace ?? undefined}
+                                initialIndex={questionFocusIndex}
+                                commentsRef={commentsRef}
+                            />
                         ) : (
                             <ResponsePreview data={formsData} questionTitles={currentWorkspace?.questionTitles} />
                         )}

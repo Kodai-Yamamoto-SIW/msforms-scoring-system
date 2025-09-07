@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, MutableRefObject } from 'react';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
@@ -18,9 +18,10 @@ interface QuestionViewProps {
     data: ParsedFormsData;
     workspace?: ScoringWorkspace;
     initialIndex?: number;
+    commentsRef?: MutableRefObject<Record<number, Record<number, string>>>; // 親が最新を参照するためのref
 }
 
-export default function QuestionView({ data, workspace, initialIndex }: QuestionViewProps) {
+export default function QuestionView({ data, workspace, initialIndex, commentsRef }: QuestionViewProps) {
     // 採点基準の取得
     const scoringCriteria: QuestionScoringCriteria[] | undefined = workspace?.scoringCriteria;
 
@@ -28,12 +29,17 @@ export default function QuestionView({ data, workspace, initialIndex }: Question
     // null = 未採点, true = 満たす, false = 満たさない
     const [scoreInputs, setScoreInputs] = useState<Record<number, Record<number, Record<string, boolean | null>>>>({});
 
-    // サーバー保存済みスコアの読込（workspaceのscoresが届いたら反映）
+    // コメントは再レンダーを避けたいので state を使わず ref で親管理
+
+    // サーバー保存済みスコア/コメント読込（workspaceのscores, commentsが届いたら反映）
     useEffect(() => {
         if (workspace?.scores) {
             setScoreInputs(workspace.scores);
         }
-    }, [workspace?.scores]);
+        if (workspace?.comments && commentsRef) {
+            commentsRef.current = workspace.comments;
+        }
+    }, [workspace?.scores, workspace?.comments, commentsRef]);
 
     // 採点入力変更ハンドラ（三択：未採点/満たす/満たさない）
     const handleScoreChange = async (questionIdx: number, responseId: number, criterionId: string, value: boolean) => {
@@ -343,6 +349,42 @@ export default function QuestionView({ data, workspace, initialIndex }: Question
                                                         </div>
                                                     );
                                                 })}
+                                                {/* コメント入力 */}
+                                                <div className="w-full mt-4">
+                                                    <label className="block text-xs font-medium text-gray-600 mb-1">コメント</label>
+                                                    <textarea
+                                                        className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                        rows={2}
+                                                        // uncontrolled: 初期値のみ反映、入力中は再レンダー不要
+                                                        defaultValue={commentsRef?.current?.[questionIdx]?.[responseId] || ''}
+                                                        key={`c-${questionIdx}-${responseId}-${commentsRef?.current?.[questionIdx]?.[responseId] || ''}`}
+                                                        placeholder="この回答へのフィードバックや指摘を入力..."
+                                                        onChange={(e) => {
+                                                            if (!commentsRef) return;
+                                                            const value = e.target.value;
+                                                            const cur = commentsRef.current;
+                                                            if (!cur[questionIdx]) cur[questionIdx] = {};
+                                                            cur[questionIdx][responseId] = value; // ミュータブル更新（再レンダーなし）
+                                                        }}
+                                                        onBlur={async (e) => {
+                                                            if (!workspace?.id) return;
+                                                            const value = e.target.value;
+                                                            try {
+                                                                await fetch(`/api/workspaces/${workspace.id}/comments`, {
+                                                                    method: 'PUT',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({
+                                                                        questionIndex: questionIdx,
+                                                                        responseId,
+                                                                        comment: value,
+                                                                    }),
+                                                                });
+                                                            } catch (err) {
+                                                                console.error('コメント保存に失敗', err);
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

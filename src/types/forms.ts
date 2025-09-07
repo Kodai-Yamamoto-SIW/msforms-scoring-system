@@ -52,6 +52,8 @@ export interface ScoringWorkspace {
     questionTitles?: string[];
     // Track Training 由来: 自動採点で正答と判定された回答のマスク（questionIndex -> responseId -> true）
     autoCorrectMask?: Record<number, Record<number, boolean>>;
+    // 各回答へのコメント（questionIndex -> responseId -> comment 文字列）
+    comments?: Record<number, Record<number, string>>;
 }
 
 export interface CreateWorkspaceRequest {
