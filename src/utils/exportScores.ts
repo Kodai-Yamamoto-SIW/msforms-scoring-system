@@ -196,7 +196,8 @@ export function buildStudentHtml(
       .muted{ color:var(--muted); }
       .note{ margin-top:8px; }
       .header{ display:flex; gap:16px; align-items:baseline; flex-wrap:wrap; }
-      .badge{ display:inline-block; background:#eef2ff; color:#3730a3; padding:2px 8px; border-radius:999px; font-size:12px; }
+  .badge{ display:inline-flex; align-items:center; gap:6px; background:linear-gradient(145deg,#eef2ff,#e0e7ff); color:#1e3a8a; padding:6px 14px; border-radius:999px; font-size:14px; font-weight:600; letter-spacing:.5px; box-shadow:0 1px 2px rgba(0,0,0,.08),0 0 0 1px #c7d2fe inset; }
+  .badge:before{ content:"👤"; font-size:14px; opacity:.75; }
       /* markdown 基本スタイル */
       .markdown-body :where(h1,h2,h3,h4,h5){ line-height:1.3; margin:1.2em 0 .5em; }
       .markdown-body h1{ font-size:1.5em; }
