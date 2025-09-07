@@ -185,11 +185,18 @@ export function buildStudentHtml(
   .answer-card-header{ font-size:12px; font-weight:600; letter-spacing:.5px; color:#0369a1; text-transform:uppercase; padding:6px 10px; border-bottom:1px solid #e0f2fe; background:#e0f7ff; border-top-left-radius:8px; border-top-right-radius:8px; }
   .answer-body{ padding:10px 12px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-word; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
   .answer-body pre{ margin:0; background:transparent; white-space:pre-wrap; word-break:break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; font-size:13px; line-height:1.4; }
-      .criteria-table{ width:100%; border-collapse:collapse; margin-top:12px; }
-      .criteria-table th, .criteria-table td{ border:1px solid var(--line); padding:8px; text-align:left; vertical-align:top; }
-      .criteria-desc{ width:60%; }
-      .criteria-mark{ width:10%; text-align:center; }
-      .criteria-score{ width:30%; text-align:right; }
+  /* 採点基準（省スペース & 低コントラスト化） */
+  .criteria-table{ width:100%; border-collapse:separate; border-spacing:0; margin-top:10px; font-size:12.5px; line-height:1.35; background:#fff; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }
+  .criteria-table thead th{ background:#f1f5f9; font-weight:600; padding:6px 8px; text-align:left; border-bottom:1px solid #e2e8f0; color:#334155; font-size:12px; }
+  .criteria-table tbody td{ padding:5px 8px 4px; vertical-align:top; border-bottom:1px solid #f0f3f6; }
+  .criteria-table tbody tr:last-child td{ border-bottom:none; }
+  .criteria-desc{ width:58%; color:#1e293b; }
+  .criteria-mark{ width:10%; text-align:center; font-weight:600; letter-spacing:.1em; }
+  .criteria-score{ width:32%; text-align:right; color:#334155; font-variant-numeric:tabular-nums; }
+  .criteria-table tbody tr:hover td{ background:#f8fafc; }
+  .criteria-table td{ transition:background .15s ease; }
+  /* 判定記号色付け（文字そのものを利用） */
+  .criteria-mark{ color:#475569; font-size:13px; }
   .subtotal{ text-align:right; margin-top:8px; font-weight:600; }
   .comment{ margin-top:12px; background:#fffbeb; border:1px solid #fcd34d; padding:10px 12px; border-radius:6px; }
   .comment-body{ margin-top:4px; line-height:1.5; }
